@@ -1,0 +1,1396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// =========================
+/// Core Models
+/// =========================
+
+model User {
+  id        String  @id @default(uuid())
+  email     String  @unique
+  password  String
+  firstName String
+  lastName  String?
+  role      Role
+  active    Boolean @default(true)
+
+  brandId String?
+  brand   Brand?  @relation("BrandUsers", fields: [brandId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation("BranchUsers", fields: [branchId], references: [id])
+
+  // If this user is a BrandOwner
+  ownedBrands Brand[] @relation("BrandOwner")
+
+  refreshTokenVersion Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tips                   Tip[]
+  auditLogs              AuditLog[]
+  StockTransaction       StockTransaction[]
+  PurchaseOrder          PurchaseOrder[]
+  StockAdjustment        StockAdjustment[]
+  StockTransfer          StockTransfer[]
+  createdOrders          Order[]            @relation("OrderCreatedBy") // Orders created by this user
+  waiterOrders           Order[]            @relation("OrderWaiter") // Orders where this user is the waiter
+  RegisterSessionsOpened RegisterSession[]  @relation("RegisterOpenedBy")
+  RegisterSessionsClosed RegisterSession[]  @relation("RegisterClosedBy")
+  OrderLog               OrderLog[]
+  CashSessionsOpened     CashSession[]      @relation("SessionOpenedBy")
+  CashSessionsClosed     CashSession[]      @relation("SessionClosedBy")
+  CashMovements          CashMovement[]
+  TipAllocation          TipAllocation[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN
+  BRAND_OWNER
+  BRAND_ADMIN
+  BRANCH_MANAGER
+  STAFF
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  url       String?  @unique
+  currency  String // default brand currency
+  countryId String?
+  country   Country? @relation(fields: [countryId], references: [id])
+  ownerId   String
+  owner     User     @relation("BrandOwner", fields: [ownerId], references: [id])
+
+  // Staff
+  users               User[]                @relation("BrandUsers")
+  subscription        Subscription?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  branches            Branch[]
+  MenuCategory        MenuCategory[]
+  MenuItem            MenuItem[]
+  ModifierGroup       ModifierGroup[]
+  Supplier            Supplier[]
+  Product             Product[]
+  PurchaseOrder       PurchaseOrder[]
+  Category            Category[]
+  StockTransaction    StockTransaction[]
+  StockAdjustment     StockAdjustment[]
+  StockTransfer       StockTransfer[]
+  Order               Order[]
+  Recipe              Recipe[]
+  Table               Table[]
+  Register            Register[]
+  RegisterSession     RegisterSession[]
+  TaxRate             TaxRate[]
+  ServiceChargeConfig ServiceChargeConfig[]
+  Customer            Customer[]
+  KitchenStation      KitchenStation[]
+  KitchenTicket       KitchenTicket[]
+  Printer             Printer[]
+  PrintJob            PrintJob[]
+  Reservation         Reservation[]
+  WaitlistEntry       WaitlistEntry[]
+  Payment             Payment[]
+  CashSession         CashSession[]
+  CashMovement        CashMovement[]
+  Zone                Zone[]
+  Tip                 Tip[]
+  TipSettlement       TipSettlement[]
+
+  @@unique([ownerId, name]) // Brand owner cannot create duplicate brand names
+  @@map("brands")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  countryId String?
+  country   Country? @relation(fields: [countryId], references: [id])
+  currency  String // overrides brand currency if needed
+
+  defaultBillType BillType @default(FINE_DINE)
+
+  // Opposite side of BranchUsers relation
+  staff User[] @relation("BranchUsers")
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  BranchItemVariant BranchItemVariant[]
+
+  // Stock transfer relations
+  transfersFrom       StockTransfer[]       @relation("TransferFromBranch")
+  transfersTo         StockTransfer[]       @relation("TransferToBranch")
+  Order               Order[]
+  Table               Table[]
+  Register            Register[]
+  RegisterSession     RegisterSession[]
+  TaxRate             TaxRate[]
+  ServiceChargeConfig ServiceChargeConfig[]
+  KitchenStation      KitchenStation[]
+  KitchenTicket       KitchenTicket[]
+  Printer             Printer[]
+  PrintJob            PrintJob[]
+  Reservation         Reservation[]
+  WaitlistEntry       WaitlistEntry[]
+  Payment             Payment[]
+  Zone                Zone[]
+  CashSession         CashSession[]
+  CashMovement        CashMovement[]
+  Tip                 Tip[]
+  TipSettlement       TipSettlement[]
+
+  @@unique([brandId, name]) // Branch name unique within a brand
+  @@index([brandId])
+  @@map("branches")
+}
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  priceMonthly Float
+  priceYearly  Float
+  currency     String
+  maxBranches  Int?
+  maxStaff     Int?
+  features     Json
+  trialDays    Int      @default(14)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@unique([name, currency]) // No duplicate plan names per currency
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  brandId          String             @unique
+  brand            Brand              @relation(fields: [brandId], references: [id])
+  planId           String
+  plan             SubscriptionPlan   @relation(fields: [planId], references: [id])
+  status           SubscriptionStatus
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([planId])
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillType {
+  FINE_DINE
+  QUICK_BILL
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model Country {
+  id       String   @id @default(uuid())
+  code     String   @unique // ISO alpha-2
+  name     String
+  currency String // ISO 4217 currency code e.g. USD, NGN, GBP
+  brands   Brand[]
+  branches Branch[]
+
+  @@map("countries")
+}
+
+/// =========================
+/// MENU MODELS
+/// =========================
+
+model MenuCategory {
+  id        String         @id @default(uuid())
+  brandId   String
+  brand     Brand          @relation(fields: [brandId], references: [id])
+  name      String
+  parentId  String?
+  parent    MenuCategory?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children  MenuCategory[] @relation("CategoryChildren")
+  sortOrder Int            @default(0)
+  isActive  Boolean        @default(true)
+  items     ItemCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String  @id @default(uuid())
+  brandId     String
+  brand       Brand   @relation(fields: [brandId], references: [id])
+  defaultName String
+  description String?
+  sku         String? @unique
+  imageUrl    String?
+  isActive    Boolean @default(true)
+
+  // Relations
+  i18n           MenuItemI18n[]
+  variants       ItemVariant[]
+  categories     ItemCategory[]
+  modifierLinks  ItemModifierGroup[]
+  branchVariants BranchItemVariant[]
+  recipes        Recipe[]
+  itemRoutes     ItemRoute[]
+  OrderItem      OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@map("menu_items")
+}
+
+model MenuItemI18n {
+  itemId      String
+  item        MenuItem @relation(fields: [itemId], references: [id])
+  locale      String
+  name        String
+  description String?
+
+  @@id([itemId, locale])
+  @@map("menu_item_i18n")
+}
+
+model ItemVariant {
+  id        String   @id @default(uuid())
+  itemId    String
+  item      MenuItem @relation(fields: [itemId], references: [id])
+  name      String
+  price     Decimal  @db.Decimal(12, 2)
+  costPrice Decimal? @db.Decimal(12, 2)
+  sku       String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+
+  branchOverrides BranchItemVariant[]
+  modifierLinks   ItemVariantModifierGroup[]
+  recipes         Recipe[]
+  variantRoutes   VariantRoute[]
+  OrderItem       OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([itemId])
+  @@map("menu_item_variants")
+}
+
+model ModifierGroup {
+  id        String  @id @default(uuid())
+  brandId   String
+  brand     Brand   @relation(fields: [brandId], references: [id])
+  name      String
+  minSelect Int     @default(0)
+  maxSelect Int     @default(1)
+  required  Boolean @default(false)
+  isActive  Boolean @default(true)
+
+  options      ModifierOption[]
+  itemLinks    ItemModifierGroup[]
+  variantLinks ItemVariantModifierGroup[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@map("modifier_groups")
+}
+
+model ModifierOption {
+  id        String        @id @default(uuid())
+  groupId   String
+  group     ModifierGroup @relation(fields: [groupId], references: [id])
+  name      String
+  price     Decimal       @db.Decimal(12, 2)
+  isActive  Boolean       @default(true)
+  sortOrder Int           @default(0)
+
+  orderItemModifiers OrderItemModifier[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([groupId])
+  @@map("modifier_options")
+}
+
+/// Pivot: Item ↔ Category (many-to-many)
+model ItemCategory {
+  itemId     String
+  item       MenuItem     @relation(fields: [itemId], references: [id])
+  categoryId String
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+
+  @@id([itemId, categoryId])
+  @@map("item_categories")
+}
+
+/// Pivot: Item ↔ ModifierGroup
+model ItemModifierGroup {
+  itemId   String
+  item     MenuItem      @relation(fields: [itemId], references: [id])
+  groupId  String
+  group    ModifierGroup @relation(fields: [groupId], references: [id])
+  required Boolean       @default(false)
+
+  @@id([itemId, groupId])
+  @@map("item_modifier_groups")
+}
+
+/// Pivot: Variant ↔ ModifierGroup (lets groups differ by variant)
+model ItemVariantModifierGroup {
+  variantId String
+  variant   ItemVariant   @relation(fields: [variantId], references: [id])
+  groupId   String
+  group     ModifierGroup @relation(fields: [groupId], references: [id])
+
+  @@id([variantId, groupId])
+  @@map("item_variant_modifier_groups")
+}
+
+/// Per-branch variant price & availability override
+model BranchItemVariant {
+  branchId  String
+  branch    Branch      @relation(fields: [branchId], references: [id])
+  variantId String
+  variant   ItemVariant @relation(fields: [variantId], references: [id])
+
+  // Overrides
+  price       Decimal?  @db.Decimal(12, 2)
+  isAvailable Boolean   @default(true)
+  MenuItem    MenuItem? @relation(fields: [menuItemId], references: [id])
+  menuItemId  String?
+
+  @@id([branchId, variantId])
+  @@map("branch_item_variants")
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@index([brandId])
+  @@index([name])
+  @@map("suppliers")
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  brandId     String
+  brand       Brand   @relation(fields: [brandId], references: [id])
+  name        String
+  sku         String? @unique
+  barcode     String? @unique
+  description String?
+  unit        String // e.g., "kg", "pcs", "liters"
+  costPrice   Decimal @db.Decimal(10, 2)
+  sellPrice   Decimal @db.Decimal(10, 2)
+  trackStock  Boolean @default(true)
+  isActive    Boolean @default(true)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  stockItems        StockItem[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  PurchaseOrderItem PurchaseOrderItem[]
+  StockTransaction  StockTransaction[]
+  StockAdjustment   StockAdjustment[]
+  StockTransferItem StockTransferItem[]
+  RecipeItem        RecipeItem[]
+
+  @@index([brandId])
+  @@index([name])
+  @@map("products")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  brandId   String
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([brandId])
+  @@index([name])
+  @@map("categories")
+}
+
+model StockItem {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Decimal  @db.Decimal(12, 3) // supports fractional (e.g., 0.5 kg)
+  location  String? // e.g., "Main Storage", "Fridge"
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("stock_items")
+}
+
+model StockTransaction {
+  id        String      @id @default(uuid())
+  brandId   String
+  brand     Brand       @relation(fields: [brandId], references: [id])
+  productId String
+  product   Product     @relation(fields: [productId], references: [id])
+  type      StockTxType
+  quantity  Decimal     @db.Decimal(12, 3)
+  unitCost  Decimal?    @db.Decimal(10, 2) // for purchases
+  reference String? // e.g., PO#123, Adjustment Note, etc.
+  notes     String?
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@index([brandId])
+  @@index([productId])
+  @@index([type])
+  @@map("stock_transactions")
+}
+
+enum StockTxType {
+  PURCHASE // Supplier purchase
+  ADJUSTMENT // Manual correction
+  WASTAGE // Lost/expired/damaged
+  TRANSFER // Move between locations
+  SALE // Deducted on order
+  RETURN // Returned to stock
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  status      POStatus @default(DRAFT)
+  totalAmount Decimal  @db.Decimal(12, 2)
+  createdBy   String?
+  user        User?    @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@index([brandId])
+  @@index([supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Decimal       @db.Decimal(12, 3)
+  unitCost        Decimal       @db.Decimal(10, 2)
+  receivedQty     Decimal       @default(0) @db.Decimal(12, 3)
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
+}
+
+enum POStatus {
+  DRAFT
+  SENT
+  RECEIVED
+  PARTIAL
+  CANCELLED
+}
+
+model StockAdjustment {
+  id        String   @id @default(uuid())
+  brandId   String
+  productId String
+  quantity  Decimal  @db.Decimal(12, 3) // Fixed: supports fractional quantities
+  reason    String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  brand   Brand   @relation(fields: [brandId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([brandId])
+  @@index([productId])
+  @@map("stock_adjustments")
+}
+
+model StockTransfer {
+  id           String   @id @default(uuid())
+  brandId      String
+  fromBranchId String
+  toBranchId   String
+  status       String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  createdAt    DateTime @default(now())
+  createdById  String
+
+  brand      Brand               @relation(fields: [brandId], references: [id])
+  fromBranch Branch              @relation("TransferFromBranch", fields: [fromBranchId], references: [id])
+  toBranch   Branch              @relation("TransferToBranch", fields: [toBranchId], references: [id])
+  createdBy  User                @relation(fields: [createdById], references: [id])
+  items      StockTransferItem[]
+
+  @@index([brandId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id         String  @id @default(uuid())
+  transferId String
+  productId  String
+  quantity   Decimal @db.Decimal(12, 3) // Changed from Int to Decimal
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id])
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@index([transferId])
+  @@index([productId])
+  @@map("stock_transfer_items")
+}
+
+/// =========================
+/// RECIPES / BOM
+/// =========================
+
+model Recipe {
+  id        String   @id @default(uuid())
+  brandId   String
+  itemId    String? // if recipe is defined at item level
+  variantId String? // or at specific variant level
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand   Brand        @relation(fields: [brandId], references: [id])
+  item    MenuItem?    @relation(fields: [itemId], references: [id])
+  variant ItemVariant? @relation(fields: [variantId], references: [id])
+  lines   RecipeItem[]
+
+  @@index([brandId])
+  @@index([itemId])
+  @@index([variantId])
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id        String   @id @default(uuid())
+  recipeId  String
+  productId String // inventory product consumed
+  quantity  Decimal  @db.Decimal(12, 3)
+  wastePct  Decimal? @db.Decimal(5, 2) // optional waste factor
+
+  recipe  Recipe  @relation(fields: [recipeId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([recipeId])
+  @@index([productId])
+  @@map("recipe_items")
+}
+
+/// =========================
+/// TABLES / QR / FLOOR
+/// =========================
+
+model Zone {
+  id       String  @id @default(uuid())
+  name     String
+  branchId String
+  branch   Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tables   Table[]
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   String?
+
+  @@index([branchId, name], name: "idx_zone_branch_name")
+  @@map("zones")
+}
+
+model Table {
+  id       String  @id @default(uuid())
+  name     String
+  code     String? @unique
+  capacity Int
+  branchId String
+  branch   Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  zoneId String?
+  zone   Zone?   @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+
+  status TableStatus @default(AVAILABLE)
+
+  orders Order[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Brand       Brand?        @relation(fields: [brandId], references: [id])
+  brandId     String?
+  Reservation Reservation[]
+
+  @@index([branchId, name], name: "idx_table_branch_name")
+  @@index([zoneId], name: "idx_table_zone")
+  @@map("tables")
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_SERVICE
+}
+
+/// =========================
+/// REGISTERS / CASH SESSIONS
+/// =========================
+
+model Register {
+  id       String  @id @default(uuid())
+  branchId String
+  branch   Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name     String
+  isActive Boolean @default(true)
+
+  sessions RegisterSession[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Brand       Brand?        @relation(fields: [brandId], references: [id])
+  brandId     String?
+  CashSession CashSession[]
+
+  @@index([branchId, name], name: "idx_register_branch_name")
+  @@map("registers")
+}
+
+model RegisterSession {
+  id             String         @id @default(uuid())
+  registerId     String
+  brandId        String
+  branchId       String
+  openedById     String
+  closedById     String?
+  status         RegisterStatus @default(OPEN)
+  openingBalance Decimal        @db.Decimal(12, 2)
+  closingBalance Decimal?       @db.Decimal(12, 2)
+  notes          String?
+  openedAt       DateTime       @default(now())
+  closedAt       DateTime?
+
+  register Register  @relation(fields: [registerId], references: [id])
+  brand    Brand     @relation(fields: [brandId], references: [id])
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  openedBy User      @relation("RegisterOpenedBy", fields: [openedById], references: [id])
+  closedBy User?     @relation("RegisterClosedBy", fields: [closedById], references: [id])
+  payments Payment[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([registerId])
+  @@map("register_sessions")
+}
+
+enum RegisterStatus {
+  OPEN
+  CLOSED
+}
+
+/// =========================
+/// CASH MANAGEMENT
+/// =========================
+
+model CashSession {
+  id         String   @id @default(uuid())
+  registerId String
+  register   Register @relation(fields: [registerId], references: [id], onDelete: Cascade)
+
+  openedById String
+  openedBy   User    @relation("SessionOpenedBy", fields: [openedById], references: [id])
+  closedById String?
+  closedBy   User?   @relation("SessionClosedBy", fields: [closedById], references: [id])
+
+  openingFloat Decimal @db.Decimal(12, 2)
+  cashSales    Decimal @default(0) @db.Decimal(12, 2)
+  refunds      Decimal @default(0) @db.Decimal(12, 2)
+  paidIn       Decimal @default(0) @db.Decimal(12, 2)
+  paidOut      Decimal @default(0) @db.Decimal(12, 2)
+  adjustments  Decimal @default(0) @db.Decimal(12, 2)
+
+  expectedClose Decimal  @default(0) @db.Decimal(12, 2)
+  countedClose  Decimal? @db.Decimal(12, 2)
+  overShort     Decimal? @db.Decimal(12, 2)
+
+  status   SessionStatus @default(OPEN)
+  openedAt DateTime      @default(now())
+  closedAt DateTime?
+
+  movements CashMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   String?
+  Branch    Branch?  @relation(fields: [branchId], references: [id])
+  branchId  String?
+
+  @@index([registerId, status], name: "idx_session_register_status")
+  @@index([openedAt], name: "idx_session_opened_at")
+  @@map("cash_sessions")
+}
+
+enum SessionStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+model CashMovement {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  type    MovementType
+  amount  Decimal      @db.Decimal(12, 2)
+  reason  String?
+  orderId String?
+  userId  String?
+  user    User?        @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  Brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   String?
+  Branch    Branch?  @relation(fields: [branchId], references: [id])
+  branchId  String?
+
+  @@index([sessionId, type], name: "idx_movement_session_type")
+  @@index([orderId], name: "idx_movement_order")
+  @@map("cash_movements")
+}
+
+enum MovementType {
+  SALE
+  REFUND
+  PAID_IN
+  PAID_OUT
+  ADJUSTMENT
+}
+
+/// =========================
+/// TAXES / SERVICE CHARGE / DISCOUNTS
+/// =========================
+
+model TaxRate {
+  id          String   @id @default(uuid())
+  brandId     String
+  branchId    String?
+  scope       TaxScope // BRAND or BRANCH
+  name        String
+  ratePct     Decimal  @db.Decimal(5, 2) // e.g. 7.50
+  isInclusive Boolean  @default(false) // inclusive vs exclusive tax
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  brand    Brand      @relation(fields: [brandId], references: [id])
+  branch   Branch?    @relation(fields: [branchId], references: [id])
+  OrderTax OrderTax[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@map("tax_rates")
+}
+
+model ServiceChargeConfig {
+  id        String       @id @default(uuid())
+  brandId   String
+  branchId  String?
+  name      String       @default("Service Charge")
+  type      DiscountType @default(PERCENT) // percent or flat
+  value     Decimal      @db.Decimal(7, 2) // e.g. 10% or 500.00
+  minCovers Int? // apply only if >= covers
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  brand  Brand   @relation(fields: [brandId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@map("service_charge_configs")
+}
+
+enum TaxScope {
+  BRAND
+  BRANCH
+}
+
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
+/// =========================
+/// CUSTOMERS
+/// =========================
+
+model Customer {
+  id        String   @id @default(uuid())
+  brandId   String
+  firstName String
+  lastName  String?
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand       Brand             @relation(fields: [brandId], references: [id])
+  orders      Order[]
+  addresses   CustomerAddress[]
+  Reservation Reservation[]
+
+  @@index([brandId])
+  @@index([phone])
+  @@index([email])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id         String  @id @default(uuid())
+  customerId String
+  label      String? // Home, Office
+  line1      String
+  line2      String?
+  city       String?
+  state      String?
+  postalCode String?
+  country    String?
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+/// =========================
+/// ORDERS (extended)
+/// =========================
+
+model Order {
+  id          String      @id @default(uuid())
+  brandId     String
+  branchId    String
+  type        OrderType   @default(DINE_IN)
+  status      OrderStatus @default(DRAFT)
+  tableId     String?
+  customerId  String?
+  waiterId    String?
+  covers      Int? // number of guests
+  notes       String?
+  subtotal    Decimal     @default(0) @db.Decimal(12, 2)
+  discount    Decimal     @default(0) @db.Decimal(12, 2)
+  service     Decimal     @default(0) @db.Decimal(12, 2)
+  tax         Decimal     @default(0) @db.Decimal(12, 2)
+  tip         Decimal     @default(0) @db.Decimal(12, 2)
+  total       Decimal     @default(0) @db.Decimal(12, 2)
+  paidTotal   Decimal     @default(0) @db.Decimal(12, 2)
+  createdAt   DateTime    @default(now())
+  closedAt    DateTime?
+  createdById String
+  billType    BillType    @default(FINE_DINE)
+
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  table     Table?    @relation(fields: [tableId], references: [id])
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  createdBy User      @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  waiter    User?     @relation("OrderWaiter", fields: [waiterId], references: [id])
+
+  items         OrderItem[]
+  payments      Payment[]
+  logs          OrderLog[]
+  taxes         OrderTax[]
+  KitchenTicket KitchenTicket[]
+  Tip           Tip[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([status])
+  @@index([type])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  itemId    String // MenuItem
+  variantId String? // ItemVariant
+  quantity  Int
+  basePrice Decimal @db.Decimal(12, 2)
+  linePrice Decimal @db.Decimal(12, 2) // base + modifiers - item discounts
+  notes     String?
+  routeToId String? // KitchenStation id for routing
+  isVoided  Boolean @default(false)
+
+  order   Order           @relation(fields: [orderId], references: [id])
+  item    MenuItem        @relation(fields: [itemId], references: [id])
+  variant ItemVariant?    @relation(fields: [variantId], references: [id])
+  routeTo KitchenStation? @relation(fields: [routeToId], references: [id])
+
+  modifiers OrderItemModifier[]
+  tickets   KitchenTicketItem[]
+
+  @@index([orderId])
+  @@index([itemId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id          String  @id @default(uuid())
+  orderItemId String
+  optionId    String
+  price       Decimal @db.Decimal(12, 2)
+
+  orderItem OrderItem      @relation(fields: [orderItemId], references: [id])
+  option    ModifierOption @relation(fields: [optionId], references: [id])
+
+  @@index([orderItemId])
+  @@index([optionId])
+  @@map("order_item_modifiers")
+}
+
+model OrderLog {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  message   String?
+  userId    String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User? @relation(fields: [userId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@map("order_logs")
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  brandId   String
+  branchId  String
+  orderId   String
+  sessionId String? // RegisterSession
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(12, 2)
+  tipAmount Decimal       @default(0) @db.Decimal(12, 2)
+  reference String? // gateway ref / rrn
+  metadata  Json?
+  createdAt DateTime      @default(now())
+
+  brand   Brand            @relation(fields: [brandId], references: [id])
+  branch  Branch           @relation(fields: [branchId], references: [id])
+  order   Order            @relation(fields: [orderId], references: [id])
+  session RegisterSession? @relation(fields: [sessionId], references: [id])
+  refunds PaymentRefund[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+model PaymentRefund {
+  id        String   @id @default(uuid())
+  paymentId String
+  amount    Decimal  @db.Decimal(12, 2)
+  reason    String?
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@map("payment_refunds")
+}
+
+model OrderTax {
+  id        String  @id @default(uuid())
+  orderId   String
+  taxRateId String
+  name      String
+  ratePct   Decimal @db.Decimal(5, 2)
+  amount    Decimal @db.Decimal(12, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  taxRate TaxRate @relation(fields: [taxRateId], references: [id])
+
+  @@index([orderId])
+  @@index([taxRateId])
+  @@map("order_taxes")
+}
+
+/// =========================
+/// KITCHEN STATIONS / TICKETS
+/// =========================
+
+model KitchenStation {
+  id        String   @id @default(uuid())
+  brandId   String
+  branchId  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand  Brand  @relation(fields: [brandId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  // routing links
+  itemRoutes    ItemRoute[]
+  variantRoutes VariantRoute[]
+  tickets       KitchenTicket[]
+  OrderItem     OrderItem[]
+
+  @@unique([branchId, name])
+  @@index([brandId])
+  @@index([branchId])
+  @@map("kitchen_stations")
+}
+
+model ItemRoute {
+  stationId String
+  itemId    String
+
+  station KitchenStation @relation(fields: [stationId], references: [id])
+  item    MenuItem       @relation(fields: [itemId], references: [id])
+
+  @@id([stationId, itemId])
+  @@map("item_routes")
+}
+
+model VariantRoute {
+  stationId String
+  variantId String
+
+  station KitchenStation @relation(fields: [stationId], references: [id])
+  variant ItemVariant    @relation(fields: [variantId], references: [id])
+
+  @@id([stationId, variantId])
+  @@map("variant_routes")
+}
+
+model KitchenTicket {
+  id        String              @id @default(uuid())
+  brandId   String
+  branchId  String
+  orderId   String
+  stationId String
+  status    KitchenTicketStatus @default(NEW)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  brand   Brand               @relation(fields: [brandId], references: [id])
+  branch  Branch              @relation(fields: [branchId], references: [id])
+  order   Order               @relation(fields: [orderId], references: [id])
+  station KitchenStation      @relation(fields: [stationId], references: [id])
+  items   KitchenTicketItem[]
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([orderId])
+  @@index([stationId])
+  @@map("kitchen_tickets")
+}
+
+model KitchenTicketItem {
+  id          String              @id @default(uuid())
+  ticketId    String
+  orderItemId String
+  status      KitchenTicketStatus @default(NEW)
+
+  ticket    KitchenTicket @relation(fields: [ticketId], references: [id])
+  orderItem OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  @@index([ticketId])
+  @@index([orderItemId])
+  @@map("kitchen_ticket_items")
+}
+
+/// =========================
+/// PRINTERS / PRINT JOBS
+/// =========================
+
+model Printer {
+  id        String      @id @default(uuid())
+  brandId   String
+  branchId  String
+  name      String
+  type      PrinterType @default(RECEIPT)
+  deviceUri String // e.g. ipp://, tcp://ip:port, usb id
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  brand  Brand      @relation(fields: [brandId], references: [id])
+  branch Branch     @relation(fields: [branchId], references: [id])
+  jobs   PrintJob[]
+
+  @@unique([branchId, name])
+  @@index([brandId])
+  @@index([branchId])
+  @@map("printers")
+}
+
+model PrintJob {
+  id        String    @id @default(uuid())
+  brandId   String
+  branchId  String
+  printerId String
+  payload   Json // raw receipt/ticket payload
+  status    String    @default("QUEUED") // QUEUED, SENT, FAILED
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  brand   Brand   @relation(fields: [brandId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  printer Printer @relation(fields: [printerId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([printerId])
+  @@map("print_jobs")
+}
+
+/// =========================
+/// RESERVATIONS / WAITLIST
+/// =========================
+
+model Reservation {
+  id         String            @id @default(uuid())
+  brandId    String
+  branchId   String
+  tableId    String?
+  customerId String?
+  status     ReservationStatus @default(PENDING)
+  covers     Int
+  reservedAt DateTime // target time
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  brand    Brand     @relation(fields: [brandId], references: [id])
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  table    Table?    @relation(fields: [tableId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([reservedAt])
+  @@map("reservations")
+}
+
+model WaitlistEntry {
+  id        String   @id @default(uuid())
+  brandId   String
+  branchId  String
+  name      String
+  phone     String?
+  covers    Int
+  notes     String?
+  status    String   @default("WAITING") // WAITING, NOTIFIED, SEATED, LEFT
+  createdAt DateTime @default(now())
+
+  brand  Brand  @relation(fields: [brandId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@map("waitlist")
+}
+
+/// =========================
+/// ENUMS
+/// =========================
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+  ONLINE
+}
+
+enum OrderStatus {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  READY
+  SERVED
+  PART_PAID
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum KitchenTicketStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  SERVED
+  VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  STRIPE
+  PAYSTACK
+  FLUTTERWAVE
+  OTHER
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PrinterType {
+  RECEIPT
+  KITCHEN
+}
+
+model Tip {
+  id         String   @id @default(cuid())
+  brandId    String
+  branchId   String
+  orderId    String?
+  registerId String?
+  staffId    String? // waiter/server if applicable
+  amount     Decimal  @db.Decimal(12, 2)
+  method     String // "CASH" | "CARD" | "OTHER"
+  type       String // "DIRECT" | "POOLED" | "BRANCH"
+  note       String?
+  createdAt  DateTime @default(now())
+
+  brand  Brand  @relation(fields: [brandId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  order  Order? @relation(fields: [orderId], references: [id])
+  staff  User?  @relation(fields: [staffId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([orderId])
+  @@index([registerId])
+  @@index([staffId])
+  @@map("tips")
+}
+
+model TipSettlement {
+  id          String          @id @default(cuid())
+  brandId     String
+  branchId    String
+  registerId  String?
+  date        DateTime        @default(now()) // date of settlement
+  total       Decimal
+  rule        String // "EQUAL" | "HOURS" | "SALES"
+  createdAt   DateTime        @default(now())
+  allocations TipAllocation[]
+  brand       Brand           @relation(fields: [brandId], references: [id])
+  branch      Branch          @relation(fields: [branchId], references: [id])
+
+  @@index([brandId])
+  @@index([branchId])
+  @@index([registerId])
+  @@map("tip_settlements")
+}
+
+model TipAllocation {
+  id           String        @id @default(cuid())
+  settlementId String
+  staffId      String
+  amount       Decimal
+  createdAt    DateTime      @default(now())
+  settlement   TipSettlement @relation(fields: [settlementId], references: [id])
+  staff        User          @relation(fields: [staffId], references: [id])
+
+  @@index([settlementId])
+  @@index([staffId])
+  @@map("tip_allocations")
+}
