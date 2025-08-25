@@ -33,6 +33,7 @@ const tipSettlementRoutes = require("./modules/tip-settlement/tip-settlement.rou
 const orderRoutes = require("./modules/orders/order.routes");
 
 const menuRoutes = require("./modules/menu/menu.routes");
+const recipeRoutes = require("./modules/recipes/recipe.routes");
 const supplierRoutes = require("./modules/inventory/suppliers.routes");
 const productRoutes = require("./modules/inventory/products.routes");
 const stockRoutes = require("./modules/inventory/stock.routes");
@@ -78,6 +79,7 @@ app.use("/api/tip-settlement", tipSettlementRoutes);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/menu", menuRoutes);
+app.use("/api/recipes", recipeRoutes);
 app.use("/api/inventory", supplierRoutes);
 app.use("/api/inventory", productRoutes);
 app.use("/api/inventory", stockRoutes);

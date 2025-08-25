@@ -3,7 +3,6 @@ const router = require("express").Router();
 const { auth } = require("../../middleware/auth");
 const { tenant } = require("../../middleware/tenant");
 const { requireActiveSubscription } = require("../../middleware/subscription");
-
 const ctrl = require("./order.controller");
 const pay = require("./payment.controller");
 

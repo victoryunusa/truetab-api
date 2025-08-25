@@ -6,12 +6,12 @@ function tenant(requiredBrand = true) {
     try {
       const brandId =
         req.headers["x-brand-id"] ||
-        req.body.brandId ||
+        req.body?.brandId ||
         req.query.brandId ||
         null;
       const branchId =
         req.headers["x-branch-id"] ||
-        req.body.branchId ||
+        req.body?.branchId ||
         req.query.branchId ||
         null;
 

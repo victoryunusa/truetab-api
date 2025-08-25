@@ -10,9 +10,28 @@ async function list({ brandId }) {
     where: { brandId },
     orderBy: { createdAt: "desc" },
     include: {
-      variants: true,
+      variants: {
+        include: {
+          recipes: {
+            select: {
+              id: true,
+              name: true,
+              isActive: true,
+              _count: { select: { lines: true } }
+            }
+          }
+        }
+      },
       categories: { include: { category: true } },
       modifierLinks: { include: { group: true } },
+      recipes: {
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+          _count: { select: { lines: true } }
+        }
+      },
     },
   });
 }
@@ -28,9 +47,34 @@ async function get(id, { brandId }) {
     where: { id, brandId },
     include: {
       i18n: true,
-      variants: true,
+      variants: {
+        include: {
+          recipes: {
+            include: {
+              lines: {
+                include: {
+                  product: {
+                    select: { id: true, name: true, unit: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       categories: { include: { category: true } },
       modifierLinks: { include: { group: { include: { options: true } } } },
+      recipes: {
+        include: {
+          lines: {
+            include: {
+              product: {
+                select: { id: true, name: true, unit: true }
+              }
+            }
+          }
+        }
+      },
     },
   });
   if (!item) throw new Error("Item not found");

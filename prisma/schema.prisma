@@ -21,10 +21,10 @@ model User {
   active    Boolean @default(true)
 
   brandId String?
-  brand   Brand?  @relation("BrandUsers", fields: [brandId], references: [id])
+  brand   Brand?  @relation("BrandUsers", fields: [brandId], references: [id], onDelete: SetNull)
 
   branchId String?
-  branch   Branch? @relation("BranchUsers", fields: [branchId], references: [id])
+  branch   Branch? @relation("BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
 
   // If this user is a BrandOwner
   ownedBrands Brand[] @relation("BrandOwner")
@@ -110,6 +110,7 @@ model Brand {
   Zone                Zone[]
   Tip                 Tip[]
   TipSettlement       TipSettlement[]
+  Promotion           Promotion[]
 
   @@unique([ownerId, name]) // Brand owner cannot create duplicate brand names
   @@map("brands")
@@ -583,12 +584,12 @@ model StockAdjustment {
 }
 
 model StockTransfer {
-  id           String   @id @default(uuid())
+  id           String              @id @default(uuid())
   brandId      String
   fromBranchId String
   toBranchId   String
-  status       String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
-  createdAt    DateTime @default(now())
+  status       StockTransferStatus @default(PENDING)
+  createdAt    DateTime            @default(now())
   createdById  String
 
   brand      Brand               @relation(fields: [brandId], references: [id])
@@ -600,6 +601,7 @@ model StockTransfer {
   @@index([brandId])
   @@index([fromBranchId])
   @@index([toBranchId])
+  @@index([status])
   @@map("stock_transfers")
 }
 
@@ -691,13 +693,13 @@ model Table {
 
   status TableStatus @default(AVAILABLE)
 
-  orders Order[]
+  orders       Order[]
+  reservations Reservation[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  Brand       Brand?        @relation(fields: [brandId], references: [id])
-  brandId     String?
-  Reservation Reservation[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   String?
 
   @@index([branchId, name], name: "idx_table_branch_name")
   @@index([zoneId], name: "idx_table_zone")
@@ -978,12 +980,13 @@ model Order {
   createdBy User      @relation("OrderCreatedBy", fields: [createdById], references: [id])
   waiter    User?     @relation("OrderWaiter", fields: [waiterId], references: [id])
 
-  items         OrderItem[]
-  payments      Payment[]
-  logs          OrderLog[]
-  taxes         OrderTax[]
-  KitchenTicket KitchenTicket[]
-  Tip           Tip[]
+  items           OrderItem[]
+  payments        Payment[]
+  logs            OrderLog[]
+  taxes           OrderTax[]
+  KitchenTicket   KitchenTicket[]
+  Tip             Tip[]
+  PromoRedemption PromoRedemption[]
 
   @@index([brandId])
   @@index([branchId])
@@ -1336,18 +1339,56 @@ enum PrinterType {
   KITCHEN
 }
 
+enum StockTransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum TipMethod {
+  CASH
+  CARD
+  OTHER
+}
+
+enum TipType {
+  DIRECT
+  POOLED
+  BRANCH
+}
+
+enum TipSettlementRule {
+  EQUAL
+  HOURS
+  SALES
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  SEATED
+  LEFT
+}
+
+enum PrintJobStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
 model Tip {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   brandId    String
   branchId   String
   orderId    String?
   registerId String?
   staffId    String? // waiter/server if applicable
-  amount     Decimal  @db.Decimal(12, 2)
-  method     String // "CASH" | "CARD" | "OTHER"
-  type       String // "DIRECT" | "POOLED" | "BRANCH"
+  amount     Decimal   @db.Decimal(12, 2)
+  method     TipMethod @default(CASH)
+  type       TipType   @default(DIRECT)
   note       String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   brand  Brand  @relation(fields: [brandId], references: [id])
   branch Branch @relation(fields: [branchId], references: [id])
@@ -1393,4 +1434,42 @@ model TipAllocation {
   @@index([settlementId])
   @@index([staffId])
   @@map("tip_allocations")
+}
+
+model Promotion {
+  id             String       @id @default(uuid())
+  brandId        String
+  code           String       @unique
+  name           String
+  type           DiscountType // PERCENT | AMOUNT
+  value          Decimal      @db.Decimal(7, 2)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  minSubtotal    Decimal?     @db.Decimal(12, 2)
+  maxRedemptions Int?
+  timesRedeemed  Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  brand       Brand             @relation(fields: [brandId], references: [id])
+  redemptions PromoRedemption[]
+
+  @@index([brandId, isActive])
+  @@map("promotions")
+}
+
+model PromoRedemption {
+  id          String   @id @default(uuid())
+  promotionId String
+  orderId     String
+  amount      Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id])
+
+  @@unique([promotionId, orderId]) // one promo per order
+  @@index([orderId])
+  @@map("promo_redemptions")
 }
