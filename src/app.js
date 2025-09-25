@@ -40,6 +40,7 @@ const stockRoutes = require("./modules/inventory/stock.routes");
 const poRoutes = require("./modules/inventory/po.routes");
 const adjustmentsRoutes = require("./modules/inventory/adjustment.routes");
 const transfersRoutes = require("./modules/inventory/transfer.routes");
+const promotionRoutes = require("./modules/promotions/promotion.routes");
 
 const app = express();
 
@@ -86,6 +87,8 @@ app.use("/api/inventory", stockRoutes);
 app.use("/api/inventory", poRoutes);
 app.use("/api/inventory", adjustmentsRoutes);
 app.use("/api/inventory", transfersRoutes);
+
+app.use("/api/promotions", promotionRoutes);
 
 // Healthcheck
 app.get("/api/health", async (req, res) => {

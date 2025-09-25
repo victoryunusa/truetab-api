@@ -4,6 +4,104 @@ const prisma = new PrismaClient();
 const { Decimal } = require('@prisma/client/runtime/library');
 const d = n => new Decimal(n || 0);
 
+// CRUD Operations
+async function createPromotion(brandId, data) {
+  const promotion = await prisma.promotion.create({
+    data: {
+      ...data,
+      brandId,
+    },
+  });
+  return promotion;
+}
+
+async function listPromotions(brandId, { page = 1, limit = 10, status } = {}) {
+  const where = { brandId };
+  if (status) {
+    where.isActive = status === 'active';
+  }
+
+  const [promotions, total] = await Promise.all([
+    prisma.promotion.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { redemptions: true },
+        },
+      },
+    }),
+    prisma.promotion.count({ where }),
+  ]);
+
+  return {
+    promotions,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+async function getPromotionById(id, brandId) {
+  return prisma.promotion.findFirst({
+    where: { id, brandId },
+    include: {
+      _count: {
+        select: { redemptions: true },
+      },
+    },
+  });
+}
+
+async function updatePromotion(id, brandId, data) {
+  const promotion = await prisma.promotion.findFirst({
+    where: { id, brandId },
+  });
+  
+  if (!promotion) {
+    throw new Error('Promotion not found');
+  }
+
+  return prisma.promotion.update({
+    where: { id },
+    data,
+  });
+}
+
+async function deletePromotion(id, brandId) {
+  const promotion = await prisma.promotion.findFirst({
+    where: { id, brandId },
+  });
+  
+  if (!promotion) {
+    throw new Error('Promotion not found');
+  }
+
+  return prisma.promotion.delete({
+    where: { id },
+  });
+}
+
+async function togglePromotionStatus(id, brandId) {
+  const promotion = await prisma.promotion.findFirst({
+    where: { id, brandId },
+  });
+  
+  if (!promotion) {
+    throw new Error('Promotion not found');
+  }
+
+  return prisma.promotion.update({
+    where: { id },
+    data: { isActive: !promotion.isActive },
+  });
+}
+
 async function validateAndCompute(tx, orderId, code, { brandId }) {
   const promo = await tx.promotion.findFirst({
     where: {
@@ -62,4 +160,13 @@ async function remove(tx, orderId) {
   await tx.order.update({ where: { id: orderId }, data: { discount: 0 } });
 }
 
-module.exports = { validateAndCompute, remove };
+module.exports = { 
+  validateAndCompute, 
+  remove, 
+  createPromotion,
+  listPromotions,
+  getPromotionById,
+  updatePromotion,
+  deletePromotion,
+  togglePromotionStatus,
+};

@@ -10,13 +10,10 @@ describe('Auth API', () => {
         password: 'Password123!',
         firstName: 'John',
         lastName: 'Doe',
-        role: 'STAFF'
+        role: 'STAFF',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
 
       expect(response.body).toHaveProperty('user');
       expect(response.body).toHaveProperty('accessToken');
@@ -29,13 +26,10 @@ describe('Auth API', () => {
         email: 'invalid-email',
         password: 'Password123!',
         firstName: 'John',
-        role: 'STAFF'
+        role: 'STAFF',
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(400);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -45,13 +39,10 @@ describe('Auth API', () => {
     test('should login with valid credentials', async () => {
       const loginData = {
         email: 'test@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(200);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
 
       expect(response.body).toHaveProperty('user');
       expect(response.body).toHaveProperty('accessToken');
@@ -61,13 +52,10 @@ describe('Auth API', () => {
     test('should return error for invalid credentials', async () => {
       const loginData = {
         email: 'test@example.com',
-        password: 'wrongpassword'
+        password: 'wrongpassword',
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(401);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
