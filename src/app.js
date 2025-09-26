@@ -70,7 +70,7 @@ app.use(
 );
 
 // Routes
-app.use('/api/admin/demo', demoRoutes);
+app.use('/api/admin/demo-requests', demoRoutes);
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/countries', countryRoutes);

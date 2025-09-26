@@ -1,6 +1,8 @@
 const { prisma } = require('../../../lib/prisma');
 const { customAlphabet } = require('nanoid');
-const sendEmail = require('../../../utils/mailer'); // implement with nodemailer/sendgrid etc.
+const templateService = require('../../../services/templateService');
+const { sendMail } = require('../../../utils/mailer');
+// const sendEmail = require('../../../utils/mailer'); // implement with nodemailer/sendgrid etc.
 
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
 const nanoid = customAlphabet(alphabet, 8);
@@ -34,11 +36,16 @@ async function approveDemoRequest(id) {
 
   const code = nanoid();
 
-  const regCode = await prisma.registrationCode.create({
-    data: {
+  const regCode = await prisma.registrationCode.upsert({
+    where: { demoRequestId: request.id },
+    update: {
+      code,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // refresh if re-approved
+    },
+    create: {
       code,
       email: request.email,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       demoRequestId: request.id,
     },
   });
@@ -48,14 +55,29 @@ async function approveDemoRequest(id) {
     data: { status: 'APPROVED', approvedAt: new Date() },
   });
 
-  // send email
-  await sendEmail(
-    request.email,
-    'Your demo request has been approved 🎉',
-    `Hello ${request.firstName || ''},\n\nYour demo request was approved. Use this code to register: ${code}\n\nThis code will expire in 7 days.\n\nCheers!`
-  );
+  // Send email with code
+  await sendDemoInvite({ request, regCode });
 
   return regCode;
+}
+
+async function sendDemoInvite({ request, regCode }) {
+  const registerUrl = `${process.env.APP_URL}/register?code=${regCode.code}`;
+
+  const htmlContent = await templateService.renderTemplate('demo-invite-email', {
+    requesterName: request.name || 'there',
+    code: regCode.code,
+    registerUrl,
+    expiresAt: regCode.expiresAt.toDateString(),
+    year: new Date().getFullYear(),
+  });
+
+  await sendMail({
+    to: request.email,
+    subject: '✅ Your Nine demo access is ready',
+    html: htmlContent,
+    text: `Hi ${request.name}, your Nine demo is ready. Use code ${regCode.code} to register here: ${registerUrl}`,
+  });
 }
 
 async function rejectDemoRequest(id) {
@@ -71,12 +93,15 @@ async function rejectDemoRequest(id) {
     data: { status: 'REJECTED' },
   });
 
-  // optional: notify user
-  await sendEmail(
-    request.email,
-    'Your demo request was not approved',
-    `Hello,\n\nUnfortunately, your demo request has been rejected.\n\nRegards.`
-  );
+  // Notify user
+  await sendMail({
+    to: request.email,
+    subject: 'Your demo request was not approved',
+    text: `Hello,\n\nUnfortunately, your demo request has been rejected.\n\nRegards,\nTruetab`,
+    html: `<p>Hello,</p>
+           <p>Unfortunately, your demo request has been <b>rejected</b>.</p>
+           <p>Regards,<br>Truetab</p>`,
+  });
 
   return { ok: true };
 }

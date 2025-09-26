@@ -1475,7 +1475,7 @@ model PromoRedemption {
 }
 
 model DemoRequest {
-  id         String            @id @default(cuid())
+  id         String            @id @default(uuid())
   email      String            @unique
   firstName  String?
   lastName   String?
@@ -1491,7 +1491,7 @@ model DemoRequest {
 }
 
 model RegistrationCode {
-  id            String       @id @default(cuid())
+  id            String       @id @default(uuid())
   code          String       @unique
   email         String
   isUsed        Boolean      @default(false)

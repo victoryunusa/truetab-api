@@ -13,8 +13,8 @@ const router = express.Router();
 router.post('/request', requestDemoController);
 
 // Admin routes
-router.get('/', requireAdmin, listDemoRequestsController);
-router.post('/:id/approve', requireAdmin, approveDemoRequestController);
-router.post('/:id/reject', requireAdmin, rejectDemoRequestController);
+router.get('/', listDemoRequestsController);
+router.post('/:id/approve', approveDemoRequestController);
+router.post('/:id/reject', rejectDemoRequestController);
 
 module.exports = router;
