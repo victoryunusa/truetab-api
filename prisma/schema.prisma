@@ -23,8 +23,7 @@ model User {
   brandId String?
   brand   Brand?  @relation("BrandUsers", fields: [brandId], references: [id], onDelete: SetNull)
 
-  branchId String?
-  branch   Branch? @relation("BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
+  branches UserBranch[]
 
   // If this user is a BrandOwner
   ownedBrands Brand[] @relation("BrandOwner")
@@ -51,7 +50,6 @@ model User {
   TipAllocation          TipAllocation[]
 
   @@index([brandId])
-  @@index([branchId])
   @@map("users")
 }
 
@@ -128,8 +126,9 @@ model Branch {
 
   defaultBillType BillType @default(FINE_DINE)
 
+  users UserBranch[]
+
   // Opposite side of BranchUsers relation
-  staff User[] @relation("BranchUsers")
 
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -160,6 +159,22 @@ model Branch {
   @@unique([brandId, name]) // Branch name unique within a brand
   @@index([brandId])
   @@map("branches")
+}
+
+model UserBranch {
+  id       String  @id @default(uuid())
+  userId   String
+  branchId String
+  isActive Boolean @default(false) // currently active branch for the user
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, branchId]) // prevent duplicate assignment
+  @@map("user_branches")
 }
 
 model SubscriptionPlan {

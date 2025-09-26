@@ -1,29 +1,48 @@
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function createBranch({ brandId, name, location, countryId }) {
-  if (!brandId) throw new Error("brandId is required");
+async function createBranch({ brandId, name, location, countryId, creatorUserId }) {
+  if (!brandId) throw new Error('brandId is required');
 
-  const country = await prisma.country.findUnique({
-    where: { id: countryId },
-  });
-  if (!country) throw new Error("Invalid countryId");
+  const [brand, country] = await Promise.all([
+    prisma.brand.findUnique({ where: { id: brandId } }),
+    //prisma.country.findUnique({ where: { id: countryId } }),
+  ]);
 
-  return prisma.branch.create({
-    data: {
-      brandId,
-      name,
-      location: location || null,
-      countryId: countryId,
-      currency: country.currency,
-    },
+  if (!brand) throw new Error('Invalid brandId');
+  //if (!country) throw new Error('Invalid countryId');
+
+  // create branch inside a transaction
+  return prisma.$transaction(async tx => {
+    const branch = await tx.branch.create({
+      data: {
+        brandId,
+        name,
+        location: location || null,
+        countryId: brand.countryId,
+        currency: brand.currency,
+      },
+    });
+
+    // optionally auto-link creator to new branch
+    if (creatorUserId) {
+      await tx.userBranch.create({
+        data: {
+          userId: creatorUserId,
+          branchId: branch.id,
+          isActive: false, // don't auto-activate unless explicitly desired
+        },
+      });
+    }
+
+    return branch;
   });
 }
 
 async function listBranches({ brandId }) {
   return prisma.branch.findMany({
     where: { brandId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   });
 }
 

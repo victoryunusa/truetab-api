@@ -65,7 +65,7 @@ async function sendDemoInvite({ request, regCode }) {
   const registerUrl = `${process.env.APP_URL}/register?code=${regCode.code}`;
 
   const htmlContent = await templateService.renderTemplate('demo-invite-email', {
-    requesterName: request.name || 'there',
+    requesterName: request.firstName || 'there',
     code: regCode.code,
     registerUrl,
     expiresAt: regCode.expiresAt.toDateString(),
@@ -74,9 +74,9 @@ async function sendDemoInvite({ request, regCode }) {
 
   await sendMail({
     to: request.email,
-    subject: '✅ Your Nine demo access is ready',
+    subject: 'Your Nine demo access is ready',
     html: htmlContent,
-    text: `Hi ${request.name}, your Nine demo is ready. Use code ${regCode.code} to register here: ${registerUrl}`,
+    text: `Hi ${request.firstName}, your Nine demo is ready. Use code ${regCode.code} to register here: ${registerUrl}`,
   });
 }
 

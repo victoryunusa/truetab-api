@@ -4,12 +4,14 @@ const {
   updateUserRole,
   deactivateUser,
   updateProfile,
-} = require("./user.service");
+} = require('./user.service');
 const {
   inviteUserSchema,
   updateRoleSchema,
   updateProfileSchema,
-} = require("./user.validation");
+  switchBranchSchema,
+  assignBranchSchema,
+} = require('./user.validation');
 
 // Invite user (Brand Owner/Admin only)
 async function inviteUserController(req, res) {
@@ -17,17 +19,14 @@ async function inviteUserController(req, res) {
     const { value, error } = inviteUserSchema.validate(req.body, {
       abortEarly: false,
     });
-    if (error)
-      return res
-        .status(400)
-        .json({ error: error.details.map((d) => d.message) });
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
 
     const result = await inviteUser({
       inviterId: req.user.id,
       brandId: req.tenant.brandId,
       ...value,
     });
-    res.status(201).json({ message: "Invitation sent", data: result });
+    res.status(201).json({ message: 'Invitation sent', data: result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -47,10 +46,7 @@ async function listUsersController(req, res) {
 async function updateUserRoleController(req, res) {
   try {
     const { value, error } = updateRoleSchema.validate(req.body);
-    if (error)
-      return res
-        .status(400)
-        .json({ error: error.details.map((d) => d.message) });
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
 
     const updated = await updateUserRole({
       userId: req.params.userId,
@@ -70,7 +66,7 @@ async function deactivateUserController(req, res) {
       userId: req.params.userId,
       brandId: req.tenant.brandId,
     });
-    res.json({ message: "User deactivated" });
+    res.json({ message: 'User deactivated' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -80,13 +76,35 @@ async function deactivateUserController(req, res) {
 async function updateProfileController(req, res) {
   try {
     const { value, error } = updateProfileSchema.validate(req.body);
-    if (error)
-      return res
-        .status(400)
-        .json({ error: error.details.map((d) => d.message) });
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
 
     const updated = await updateProfile(req.user.id, value);
     res.json({ data: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+async function assignUserToBranchController(req, res) {
+  try {
+    const { value, error } = assignBranchSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
+
+    const result = await assignUserToBranch(value.userId, value.branchId);
+    res.status(201).json({ message: 'User assigned to branch', data: result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+// Switch branch (self)
+async function switchBranchController(req, res) {
+  try {
+    const { value, error } = switchBranchSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
+
+    const result = await switchBranch(req.user.id, value.branchId);
+    res.json({ message: 'Branch switched', data: result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -98,4 +116,6 @@ module.exports = {
   updateUserRoleController,
   deactivateUserController,
   updateProfileController,
+  assignUserToBranchController,
+  switchBranchController,
 };

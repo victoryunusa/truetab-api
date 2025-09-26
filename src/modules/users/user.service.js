@@ -20,11 +20,9 @@ const templateService = require('../../services/templateService');
 //   return { email, role, inviteToken: token };
 // }
 
-async function inviteUser({ inviterId, brandId, email, role }) {
+async function inviteUser({ inviterId, brandId, email, role, branchIds = [] }) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error('User already exists');
-
-  console.log(inviterId);
 
   const [inviter, tenant] = await Promise.all([
     prisma.user.findUnique({
@@ -37,14 +35,17 @@ async function inviteUser({ inviterId, brandId, email, role }) {
     }),
   ]);
 
-  const token = signInviteToken({ email, role, brandId });
+  if (!tenant) throw new Error('Invalid brandId');
+
+  // include branches in token so they can be assigned after registration
+  const token = signInviteToken({ email, role, brandId, branchIds });
   const acceptUrl = `${process.env.APP_URL}/accept-invite?token=${token}`;
 
   const htmlContent = await templateService.renderTemplate('invitation-email', {
-    inviterName: `${inviter.firstName} ${inviter.lastName}`,
+    inviterName: `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`,
     tenantName: tenant.name,
-    role: role,
-    acceptUrl: acceptUrl,
+    role,
+    acceptUrl,
     appUrl: process.env.APP_URL,
   });
 
@@ -55,7 +56,7 @@ async function inviteUser({ inviterId, brandId, email, role }) {
     text: `You're invited to join ${tenant.name} as ${role}. Accept here: ${acceptUrl}`,
   });
 
-  return { email, role, brandId, inviteSent: true };
+  return { email, role, brandId, branchIds, inviteSent: true };
 }
 
 // List users
@@ -98,10 +99,36 @@ async function updateProfile(userId, data) {
   });
 }
 
+async function switchBranch(userId, branchId) {
+  // deactivate all branches
+  await prisma.userBranch.updateMany({
+    where: { userId },
+    data: { isActive: false },
+  });
+
+  // activate the selected one
+  return prisma.userBranch.update({
+    where: { userId_branchId: { userId, branchId } },
+    data: { isActive: true },
+  });
+}
+
+async function assignUserToBranch(userId, branchId) {
+  return prisma.userBranch.create({
+    data: {
+      userId,
+      branchId,
+      isActive: false,
+    },
+  });
+}
+
 module.exports = {
   inviteUser,
   listUsers,
   updateUserRole,
   deactivateUser,
   updateProfile,
+  switchBranch,
+  assignUserToBranch,
 };

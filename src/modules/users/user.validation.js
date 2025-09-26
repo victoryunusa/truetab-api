@@ -1,12 +1,13 @@
-const Joi = require("joi");
+const Joi = require('joi');
 
 const inviteUserSchema = Joi.object({
   email: Joi.string().email().required(),
-  role: Joi.string().valid("BRAND_ADMIN", "STAFF").required(),
+  role: Joi.string().valid('BRAND_ADMIN', 'STAFF').required(),
+  branchIds: Joi.array().items(Joi.string().uuid()).optional(),
 });
 
 const updateRoleSchema = Joi.object({
-  role: Joi.string().valid("BRAND_ADMIN", "STAFF").required(),
+  role: Joi.string().valid('BRAND_ADMIN', 'STAFF').required(),
 });
 
 const updateProfileSchema = Joi.object({
@@ -15,4 +16,19 @@ const updateProfileSchema = Joi.object({
   avatarUrl: Joi.string().uri().optional(),
 });
 
-module.exports = { inviteUserSchema, updateRoleSchema, updateProfileSchema };
+const assignBranchSchema = Joi.object({
+  userId: Joi.string().uuid().required(),
+  branchId: Joi.string().uuid().required(),
+});
+
+const switchBranchSchema = Joi.object({
+  branchId: Joi.string().uuid().required(),
+});
+
+module.exports = {
+  inviteUserSchema,
+  updateRoleSchema,
+  updateProfileSchema,
+  assignBranchSchema,
+  switchBranchSchema,
+};

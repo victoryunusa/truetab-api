@@ -27,105 +27,121 @@ async function register(data) {
     throw e;
   }
 
-  // check registration code
+  // 2. Validate registration code
   const regCode = await prisma.registrationCode.findUnique({ where: { code } });
   if (!regCode || regCode.isUsed || regCode.expiresAt < new Date()) {
     const e = new Error('Invalid or expired registration code');
     e.status = 401;
     throw e;
   }
-
   if (regCode.email !== email) {
     const e = new Error('Code does not match this email');
     e.status = 401;
     throw e;
   }
 
-  // 2. Hash password
+  // 3. Hash password
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // 3. Create user first (without brandId/branchId yet)
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: passwordHash,
-      firstName,
-      lastName,
-      role,
+  // 4. Run the full flow in a transaction
+  const result = await prisma.$transaction(async tx => {
+    // Create user
+    const user = await tx.user.create({
+      data: {
+        email,
+        password: passwordHash,
+        firstName,
+        lastName,
+        role,
+      },
+    });
+
+    let brand = null;
+    let branch = null;
+
+    if (brandName && countryId) {
+      const country = await tx.country.findUnique({ where: { id: countryId } });
+      if (!country) throw new Error('Invalid countryId');
+
+      const defaultPlan = await tx.subscriptionPlan.findFirst({
+        where: { isDefault: true },
+      });
+      if (!defaultPlan) throw new Error('No default plan configured');
+
+      // Create brand
+      brand = await tx.brand.create({
+        data: {
+          name: brandName,
+          countryId,
+          email: brandEmail || email,
+          url: brandUrl || null,
+          currency: country.currency,
+          ownerId: user.id,
+        },
+      });
+
+      // Update user with brandId
+      await tx.user.update({
+        where: { id: user.id },
+        data: { brandId: brand.id },
+      });
+
+      // Free trial subscription
+      await tx.subscription.create({
+        data: {
+          brandId: brand.id,
+          status: 'TRIALING',
+          trialEndsAt: dayjs().add(14, 'day').toDate(),
+          currentPeriodEnd: dayjs().add(14, 'day').toDate(),
+          planId: defaultPlan.id,
+        },
+      });
+
+      // Create branch
+      branch = await tx.branch.create({
+        data: {
+          brandId: brand.id,
+          name: branchName || 'Main Branch',
+          location: branchLocation || null,
+          countryId,
+          currency: country.currency,
+        },
+      });
+
+      // Link user to branch (make it active by default)
+      await tx.userBranch.create({
+        data: {
+          userId: user.id,
+          branchId: branch.id,
+          isActive: true,
+        },
+      });
+    }
+
+    // Mark code as used
+    await tx.registrationCode.update({
+      where: { id: regCode.id },
+      data: { isUsed: true },
+    });
+
+    return { user, brand, branch };
+  });
+
+  // Reload user with relations
+  const fullUser = await prisma.user.findUnique({
+    where: { id: result.user.id },
+    include: {
+      brand: true,
+      userBranches: { include: { branch: true } },
     },
   });
 
-  let brand = null;
-  let branch = null;
-
-  // 4. If brand info is provided, create brand + subscription
-  if (brandName && countryId) {
-    const country = await prisma.country.findUnique({ where: { id: countryId } });
-    if (!country) throw new Error('Invalid countryId');
-
-    const defaultPlan = await prisma.subscriptionPlan.findFirst({
-      where: { isDefault: true },
-    });
-    if (!defaultPlan) throw new Error('No default plan configured');
-
-    brand = await prisma.brand.create({
-      data: {
-        name: brandName,
-        countryId,
-        email: brandEmail || email,
-        url: brandUrl || null,
-        currency: country.currency,
-        ownerId: user.id,
-      },
-    });
-
-    // attach brandId to user
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { brandId: brand.id },
-    });
-
-    // free trial subscription
-    await prisma.subscription.create({
-      data: {
-        brandId: brand.id,
-        status: 'TRIALING',
-        trialEndsAt: dayjs().add(14, 'day').toDate(),
-        currentPeriodEnd: dayjs().add(14, 'day').toDate(),
-        planId: defaultPlan.id,
-      },
-    });
-
-    // 5. Create default branch
-    branch = await prisma.branch.create({
-      data: {
-        brandId: brand.id,
-        name: branchName || 'Main Branch',
-        location: branchLocation || null,
-        countryId: countryId,
-        currency: country.currency,
-      },
-    });
-
-    // attach branchId to user
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { branchId: branch.id },
-    });
-  }
-
-  // mark code as used
-  await prisma.registrationCode.update({
-    where: { id: regCode.id },
-    data: { isUsed: true },
-  });
-
-  const tokens = await issueTokens(await prisma.user.findUnique({ where: { id: user.id } }));
+  const tokens = await issueTokens(fullUser);
 
   return {
-    user: publicUser(user),
-    brand,
-    branch,
+    user: publicUser(fullUser),
+    brand: result.brand,
+    branch: result.branch,
     ...tokens,
   };
 }
