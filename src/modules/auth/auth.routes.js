@@ -1,11 +1,12 @@
-const router = require("express").Router();
-const { auth } = require("../../middleware/auth");
+const router = require('express').Router();
+const { auth } = require('../../middleware/auth');
+const { requestDemoController } = require('../admin/demo-requests/demo.controller');
 const {
   registerController,
   loginController,
   refreshController,
   logoutController,
-} = require("./auth.controller");
+} = require('./auth.controller');
 
 /**
  * @openapi
@@ -31,7 +32,9 @@ const {
  *       201:
  *         description: Created
  */
-router.post("/register", registerController);
+router.post('/register', registerController);
+
+router.post('/request', requestDemoController);
 
 /**
  * @openapi
@@ -43,7 +46,7 @@ router.post("/register", registerController);
  *       200:
  *         description: OK
  */
-router.post("/login", loginController);
+router.post('/login', loginController);
 
 /**
  * @openapi
@@ -52,7 +55,7 @@ router.post("/login", loginController);
  *     tags: [Auth]
  *     summary: Exchange a refresh token for new tokens
  */
-router.post("/refresh", refreshController);
+router.post('/refresh', refreshController);
 
 /**
  * @openapi
@@ -63,6 +66,6 @@ router.post("/refresh", refreshController);
  *     security:
  *       - bearerAuth: []
  */
-router.post("/logout", auth(true), logoutController);
+router.post('/logout', auth(true), logoutController);
 
 module.exports = router;

@@ -1473,3 +1473,38 @@ model PromoRedemption {
   @@index([orderId])
   @@map("promo_redemptions")
 }
+
+model DemoRequest {
+  id         String            @id @default(cuid())
+  email      String            @unique
+  firstName  String?
+  lastName   String?
+  company    String?
+  message    String?
+  status     DemoRequestStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  approvedAt DateTime?
+  code       RegistrationCode?
+
+  @@map("demo_requests")
+}
+
+model RegistrationCode {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  email         String
+  isUsed        Boolean      @default(false)
+  expiresAt     DateTime
+  createdAt     DateTime     @default(now())
+  demoRequestId String?      @unique
+  demoRequest   DemoRequest? @relation(fields: [demoRequestId], references: [id])
+
+  @@map("registration_codes")
+}
+
+enum DemoRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
