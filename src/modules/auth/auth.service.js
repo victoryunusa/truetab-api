@@ -6,6 +6,7 @@ const dayjs = require('dayjs');
 async function register(data) {
   const {
     email,
+    phone,
     password,
     firstName,
     lastName,
@@ -49,6 +50,7 @@ async function register(data) {
     const user = await tx.user.create({
       data: {
         email,
+        phone,
         password: passwordHash,
         firstName,
         lastName,
@@ -210,7 +212,6 @@ function publicUser(u) {
     lastName: u.lastName,
     role: u.role,
     brandId: u.brandId,
-    branchId: u.branchId,
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
   };

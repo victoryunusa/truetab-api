@@ -39,14 +39,14 @@ async function inviteUser({ inviterId, brandId, email, role, branchIds = [] }) {
 
   // include branches in token so they can be assigned after registration
   const token = signInviteToken({ email, role, brandId, branchIds });
-  const acceptUrl = `${process.env.APP_URL}/accept-invite?token=${token}`;
+  const acceptUrl = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
 
   const htmlContent = await templateService.renderTemplate('invitation-email', {
     inviterName: `${inviter?.firstName ?? ''} ${inviter?.lastName ?? ''}`,
     tenantName: tenant.name,
     role,
     acceptUrl,
-    appUrl: process.env.APP_URL,
+    appUrl: process.env.FRONTEND_URL,
   });
 
   await mailer.sendMail({
@@ -99,6 +99,49 @@ async function updateProfile(userId, data) {
   });
 }
 
+async function getProfile(userId) {
+  console.log(userId);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      brand: true,
+      branches: {
+        include: {
+          branch: true, // 👈 get full branch details
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    const e = new Error('User not found');
+    e.status = 404;
+    throw e;
+  }
+
+  const cleanedUser = publicUser(user);
+  return cleanedUser;
+}
+
+function publicUser(u) {
+  return {
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    role: u.role,
+    brandId: u.brandId,
+    brand: u.brand,
+    branches: u.branches.map(b => ({
+      id: b.id,
+      isActive: b.isActive,
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+      branch: b.branch, // 👈 full branch object here
+    })),
+  };
+}
+
 async function switchBranch(userId, branchId) {
   // deactivate all branches
   await prisma.userBranch.updateMany({
@@ -129,6 +172,7 @@ module.exports = {
   updateUserRole,
   deactivateUser,
   updateProfile,
+  getProfile,
   switchBranch,
   assignUserToBranch,
 };

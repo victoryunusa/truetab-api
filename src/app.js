@@ -51,7 +51,18 @@ const app = express();
 // Core Middlewares
 app.use(requestId);
 app.use(generalLimiter);
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowed = process.env.ALLOWED_ORIGINS?.split(',') || [];
+      if (!origin || allowed.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

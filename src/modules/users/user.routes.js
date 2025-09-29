@@ -10,6 +10,7 @@ const {
   updateProfileController,
   assignUserToBranchController,
   switchBranchController,
+  getProfileController,
 } = require('./user.controller');
 
 // List users in brand
@@ -50,6 +51,7 @@ router.delete(
 
 // Update profile (self-service)
 router.put('/me', auth(true), updateProfileController);
+router.get('/me', auth(true), getProfileController);
 
 // Assign user to branch
 router.post(
@@ -61,6 +63,6 @@ router.post(
 );
 
 // Switch branch (self-service)
-router.post('/switch-branch', auth(true), tenant(true), switchBranchController);
+router.post('/switch-branch', auth(true), switchBranchController);
 
 module.exports = router;

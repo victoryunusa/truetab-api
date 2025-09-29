@@ -17,7 +17,7 @@ const updateProfileSchema = Joi.object({
 });
 
 const assignBranchSchema = Joi.object({
-  userId: Joi.string().uuid().required(),
+  userId: Joi.string().required(),
   branchId: Joi.string().uuid().required(),
 });
 

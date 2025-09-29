@@ -1,88 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .header {
-      background: #003d31;
-      color: #fff;
-      text-align: center;
-      padding: 30px 20px;
-    }
-    .header h1 {
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-    .content {
-      padding: 30px 20px;
-    }
-    .code-box {
-      background: #f8f9fa;
-      border: 1px dashed #003d31;
-      padding: 20px;
-      text-align: center;
-      margin: 20px 0;
-      font-size: 20px;
-      font-weight: bold;
-      color: #003d31;
-      letter-spacing: 2px;
-    }
-    .cta-button {
-      display: inline-block;
-      background: #003d31;
-      color: white;
-      padding: 14px 32px;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .cta-button:hover {
-      background: #025042;
-    }
-    .footer {
-      background: #f8f9fa;
-      padding: 20px;
-      text-align: center;
-      font-size: 13px;
-      color: #777;
-    }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Google Fonts (works in Gmail, Apple Mail, iOS Mail, but not Outlook Windows) -->
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Welcome to Nine!</h1>
-      <p>Your demo request has been approved</p>
+<body style="font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f4; padding: 20px; color: #333; margin: 0;">
+  <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 12px; overflow: hidden;">
+    <!-- Header -->
+    <div style="background: #003d31; color: #fff; text-align: center; padding: 30px 20px;">
+      <h1 style="margin-bottom: 10px; font-size: 22px; font-weight: 600; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">Welcome to Nine!</h1>
+      <p style="margin: 0; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">Your demo request has been approved</p>
     </div>
-    <div class="content">
-      <p>Hi {{requesterName}},</p>
-      <p>We’re excited to have you try out Nine 🎉</p>
 
-      <p>Use the registration code below to sign up:</p>
+    <!-- Content -->
+    <div style="padding: 30px 20px; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
+      <p style="margin: 0 0 16px;">Hi {{requesterName}},</p>
+      <p style="margin: 0 0 16px;">We’re excited to have you try out Nine 🎉</p>
 
-      <div class="code-box">{{code}}</div>
+      <p style="margin: 0 0 16px;">Use the registration code below to sign up:</p>
 
-      <p style="text-align: center;">
-        <a href="{{registerUrl}}" class="cta-button">Register Now</a>
+      <div style="background: #f8f9fa; border: 1px dashed #003d31; padding: 20px; text-align: center; margin: 20px 0; font-size: 20px; font-weight: bold; color: #003d31; letter-spacing: 2px; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
+        {{code}}
+      </div>
+
+      <p style="text-align: center; margin: 0 0 16px;">
+        <a href="{{registerUrl}}" style="display: inline-block; background: #003d31; color: #ffffff; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; text-decoration: none; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
+          Register Now
+        </a>
       </p>
 
-      <p>If the button doesn’t work, copy and paste this link in your browser:</p>
-      <p>{{registerUrl}}</p>
+      <p style="margin: 0 0 8px;">If the button doesn’t work, copy and paste this link in your browser:</p>
+      <p style="word-break: break-all; color: #003d31; margin: 0 0 16px;">{{registerUrl}}</p>
     </div>
-    <div class="footer">
+
+    <!-- Footer -->
+    <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 13px; color: #777; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
       &copy; {{year}} Nine Technologies Inc. <br/>
       This code is valid until {{expiresAt}}
     </div>

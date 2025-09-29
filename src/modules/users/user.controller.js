@@ -4,6 +4,9 @@ const {
   updateUserRole,
   deactivateUser,
   updateProfile,
+  getProfile,
+  assignUserToBranch,
+  switchBranch,
 } = require('./user.service');
 const {
   inviteUserSchema,
@@ -85,6 +88,15 @@ async function updateProfileController(req, res) {
   }
 }
 
+async function getProfileController(req, res) {
+  try {
+    const profile = await getProfile(req.user.id);
+    res.json({ data: profile });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 async function assignUserToBranchController(req, res) {
   try {
     const { value, error } = assignBranchSchema.validate(req.body);
@@ -116,6 +128,7 @@ module.exports = {
   updateUserRoleController,
   deactivateUserController,
   updateProfileController,
+  getProfileController,
   assignUserToBranchController,
   switchBranchController,
 };

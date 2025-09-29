@@ -1,13 +1,13 @@
 // src/modules/orders/totals.js
 // NOTE: all numbers kept in Decimal via Prisma; coerce with Number only for arithmetic if needed
-const { Decimal } = require("@prisma/client/runtime/library");
+const { Decimal } = require('@prisma/client/runtime/library');
 
 function d(n) {
   return new Decimal(n || 0);
 }
 
 async function compute(tx, order) {
-  const lines = order.items.filter((i) => !i.isVoided);
+  const lines = order.items.filter(i => !i.isVoided);
   const subtotal = lines.reduce((sum, l) => sum.plus(d(l.linePrice)), d(0));
 
   // promotions (optional): store computed discount in a side table or on order as discount
@@ -21,23 +21,20 @@ async function compute(tx, order) {
       OR: [{ branchId: order.branchId }, { branchId: null }],
       isActive: true,
     },
-    orderBy: { branchId: "desc" }, // prefer branch-level
+    orderBy: { branchId: 'desc' }, // prefer branch-level
   });
 
   let service = d(0);
   if (svcCfg) {
     const base = subtotal.minus(promoDiscount).max(0);
-    service =
-      svcCfg.type === "PERCENT"
-        ? base.mul(d(svcCfg.value)).div(100)
-        : d(svcCfg.value || 0);
+    service = svcCfg.type === 'PERCENT' ? base.mul(d(svcCfg.value)).div(100) : d(svcCfg.value || 0);
   }
 
   // taxes: gather active rates (brand/branch scope)
   const taxRates = await tx.taxRate.findMany({
     where: {
       brandId: order.brandId,
-      OR: [{ scope: "BRAND" }, { scope: "BRANCH", branchId: order.branchId }],
+      OR: [{ scope: 'BRAND' }, { scope: 'BRANCH', branchId: order.branchId }],
       isActive: true,
     },
   });

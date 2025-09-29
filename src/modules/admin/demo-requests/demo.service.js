@@ -7,7 +7,7 @@ const { sendMail } = require('../../../utils/mailer');
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
 const nanoid = customAlphabet(alphabet, 8);
 
-async function requestDemo({ email, firstName, lastName, company, message }) {
+async function requestDemo({ email, phone, firstName, lastName, company, message }) {
   const existing = await prisma.demoRequest.findUnique({ where: { email } });
   if (existing) {
     const e = new Error('A demo request already exists for this email');
@@ -16,7 +16,7 @@ async function requestDemo({ email, firstName, lastName, company, message }) {
   }
 
   return prisma.demoRequest.create({
-    data: { email, firstName, lastName, company, message },
+    data: { email, firstName, phone, lastName, company, message },
   });
 }
 
@@ -62,7 +62,7 @@ async function approveDemoRequest(id) {
 }
 
 async function sendDemoInvite({ request, regCode }) {
-  const registerUrl = `${process.env.APP_URL}/register?code=${regCode.code}`;
+  const registerUrl = `${process.env.FRONTEND_URL}/register?code=${regCode.code}`;
 
   const htmlContent = await templateService.renderTemplate('demo-invite-email', {
     requesterName: request.firstName || 'there',
