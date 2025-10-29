@@ -11,15 +11,51 @@ const prisma = new PrismaClient();
 async function handlePolarWebhook(req, res) {
   try {
     const signature = req.headers["polar-signature"];
-    const rawBody = req.body.toString('utf8');
-    const payload = JSON.parse(rawBody);
+    
+    // Log for debugging
+    console.log("Polar webhook received");
+    console.log("Headers:", req.headers);
+    console.log("Body type:", typeof req.body);
+    
+    if (!signature) {
+      console.error("Missing polar-signature header");
+      return res.status(400).json({ error: "Missing signature header" });
+    }
+    
+    // Handle raw body
+    let rawBody;
+    if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body.toString('utf8');
+    } else if (typeof req.body === 'string') {
+      rawBody = req.body;
+    } else {
+      console.error("Unexpected body type:", typeof req.body);
+      return res.status(400).json({ error: "Invalid body format" });
+    }
+    
+    console.log("Raw body length:", rawBody.length);
+    
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError.message);
+      return res.status(400).json({ error: "Invalid JSON" });
+    }
 
     // Verify webhook signature using raw body
-    if (!polarService.verifyWebhookSignature(rawBody, signature)) {
-      return res.status(400).json({ error: "Invalid signature" });
+    try {
+      if (!polarService.verifyWebhookSignature(rawBody, signature)) {
+        console.error("Signature verification failed");
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+    } catch (signatureError) {
+      console.error("Signature verification error:", signatureError.message);
+      return res.status(500).json({ error: "Signature verification failed" });
     }
 
     const event = payload;
+    console.log("Event type:", event.type);
 
     // Handle different event types
     switch (event.type) {
