@@ -37,6 +37,12 @@ async function acceptInvite(token, { firstName, lastName, password }) {
         })),
         skipDuplicates: true,
       });
+
+      // update currentBranchId to the first branch
+      await tx.user.update({
+        where: { id: newUser.id },
+        data: { currentBranchId: decoded.branchIds[0] },
+      });
     }
 
     return newUser;
@@ -46,7 +52,12 @@ async function acceptInvite(token, { firstName, lastName, password }) {
   const refreshToken = signRefreshToken(user);
 
   return {
-    user: { id: user.id, email: user.email, role: user.role },
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      currentBranchId: user.currentBranchId, // expose current branch
+    },
     accessToken,
     refreshToken,
   };

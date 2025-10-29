@@ -1,25 +1,10 @@
 const { PrismaClient, Role } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { signInviteToken } = require('../../utils/jwt');
-const mailer = require('../../utils/mailer'); // assume simple mailer util
+const mailer = require('../../utils/mailer');
 const templateService = require('../../services/templateService');
 
 // Invite user
-// async function inviteUser({ inviterId, brandId, email, role }) {
-//   const existing = await prisma.user.findUnique({ where: { email } });
-//   if (existing) throw new Error('User already exists');
-
-//   const token = signInviteToken({ email, role, brandId });
-//   // send email
-//   await mailer.sendMail({
-//     to: email,
-//     subject: "You're invited to join a brand on Truetab",
-//     text: `Accept invitation: ${process.env.APP_URL}/accept-invite?token=${token}`,
-//   });
-
-//   return { email, role, inviteToken: token };
-// }
-
 async function inviteUser({ inviterId, brandId, email, role, branchIds = [] }) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error('User already exists');
@@ -71,6 +56,12 @@ async function listUsers({ brandId }) {
       role: true,
       active: true,
       createdAt: true,
+      currentBranchId: true,
+      userBranches: {
+        include: {
+          branch: true,
+        },
+      },
     },
   });
 }
@@ -100,16 +91,19 @@ async function updateProfile(userId, data) {
 }
 
 async function getProfile(userId) {
-  console.log(userId);
+  console.log('Getting profile for user:', userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       brand: true,
-      branches: {
+      userBranches: {
+        // FIXED: Changed from 'branches' to 'userBranches'
         include: {
-          branch: true, // 👈 get full branch details
+          branch: true,
         },
       },
+      branch: true, // Include current branch relation
     },
   });
 
@@ -132,37 +126,113 @@ function publicUser(u) {
     role: u.role,
     brandId: u.brandId,
     brand: u.brand,
-    branches: u.branches.map(b => ({
-      id: b.id,
-      isActive: b.isActive,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
-      branch: b.branch, // 👈 full branch object here
+    currentBranchId: u.currentBranchId,
+    currentBranch: u.branch, // Current branch object
+    userBranches: u.userBranches.map(ub => ({
+      // FIXED: Changed from 'branches' to 'userBranches'
+      id: ub.id,
+      isActive: ub.isActive,
+      createdAt: ub.createdAt,
+      updatedAt: ub.updatedAt,
+      branch: ub.branch,
     })),
   };
 }
 
 async function switchBranch(userId, branchId) {
-  // deactivate all branches
-  await prisma.userBranch.updateMany({
-    where: { userId },
-    data: { isActive: false },
-  });
+  return await prisma.$transaction(async tx => {
+    // Deactivate all user branches
+    await tx.userBranch.updateMany({
+      where: { userId },
+      data: { isActive: false },
+    });
 
-  // activate the selected one
-  return prisma.userBranch.update({
-    where: { userId_branchId: { userId, branchId } },
-    data: { isActive: true },
+    // Check if user is already assigned to this branch
+    const existingUserBranch = await tx.userBranch.findUnique({
+      where: { userId_branchId: { userId, branchId } },
+    });
+
+    if (existingUserBranch) {
+      // Activate the existing branch assignment
+      await tx.userBranch.update({
+        where: { userId_branchId: { userId, branchId } },
+        data: { isActive: true },
+      });
+    } else {
+      // Create new branch assignment and activate it
+      await tx.userBranch.create({
+        data: {
+          userId,
+          branchId,
+          isActive: true,
+        },
+      });
+    }
+
+    // Update user's current branch
+    return tx.user.update({
+      where: { id: userId },
+      data: { currentBranchId: branchId },
+      include: {
+        brand: true,
+        userBranches: {
+          // FIXED: Changed from 'branches' to 'userBranches'
+          include: {
+            branch: true,
+          },
+        },
+        branch: true, // Include current branch
+      },
+    });
   });
 }
 
 async function assignUserToBranch(userId, branchId) {
+  // Check if assignment already exists
+  const existing = await prisma.userBranch.findUnique({
+    where: { userId_branchId: { userId, branchId } },
+  });
+
+  if (existing) {
+    return existing;
+  }
+
   return prisma.userBranch.create({
     data: {
       userId,
       branchId,
       isActive: false,
     },
+  });
+}
+
+// Get user's accessible branches
+async function getUserBranches(userId) {
+  const userBranches = await prisma.userBranch.findMany({
+    where: { userId },
+    include: {
+      branch: {
+        include: {
+          brand: true,
+        },
+      },
+    },
+    orderBy: {
+      isActive: 'desc', // Active branches first
+    },
+  });
+
+  return userBranches.map(ub => ({
+    ...ub.branch,
+    isActive: ub.isActive,
+    userBranchId: ub.id,
+  }));
+}
+
+// Remove user from branch
+async function removeUserFromBranch(userId, branchId) {
+  return prisma.userBranch.delete({
+    where: { userId_branchId: { userId, branchId } },
   });
 }
 
@@ -175,4 +245,6 @@ module.exports = {
   getProfile,
   switchBranch,
   assignUserToBranch,
+  getUserBranches,
+  removeUserFromBranch,
 };

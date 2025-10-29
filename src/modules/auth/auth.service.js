@@ -11,7 +11,6 @@ async function register(data) {
     firstName,
     lastName,
     code,
-    role,
     brandName,
     countryId,
     brandEmail,
@@ -54,7 +53,7 @@ async function register(data) {
         password: passwordHash,
         firstName,
         lastName,
-        role,
+        role: 'BRAND_OWNER', // Set as BRAND_OWNER for brand registration
       },
     });
 
@@ -76,7 +75,7 @@ async function register(data) {
           name: brandName,
           countryId,
           email: brandEmail || email,
-          url: brandUrl || null,
+          url: brandUrl ? `${brandUrl}.nineapp.site` : null,
           currency: country.currency,
           ownerId: user.id,
         },
@@ -118,6 +117,12 @@ async function register(data) {
           isActive: true,
         },
       });
+
+      // Also set currentBranchId on user
+      await tx.user.update({
+        where: { id: user.id },
+        data: { currentBranchId: branch.id },
+      });
     }
 
     // Mark code as used
@@ -129,22 +134,26 @@ async function register(data) {
     return { user, brand, branch };
   });
 
-  // Reload user with relations
+  // Reload user with relations - THIS SHOULD WORK NOW
   const fullUser = await prisma.user.findUnique({
     where: { id: result.user.id },
     include: {
       brand: true,
-      userBranches: { include: { branch: true } },
+      userBranches: {
+        include: {
+          branch: true,
+        },
+      },
+      branches: true, // Also include direct branches relation
     },
   });
 
-  const tokens = await issueTokens(fullUser);
+  //const tokens = await issueTokens(fullUser);
 
   return {
     user: publicUser(fullUser),
     brand: result.brand,
     branch: result.branch,
-    ...tokens,
   };
 }
 
@@ -211,6 +220,7 @@ function publicUser(u) {
     firstName: u.firstName,
     lastName: u.lastName,
     role: u.role,
+    currentBranchId: u.currentBranchId,
     brandId: u.brandId,
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,

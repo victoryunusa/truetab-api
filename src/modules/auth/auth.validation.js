@@ -2,6 +2,7 @@ const Joi = require('joi');
 
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
+  phone: Joi.string().required(),
   password: Joi.string().min(8).max(72).required(),
   firstName: Joi.string().min(1).max(64).required(),
   lastName: Joi.string().allow('', null),
@@ -19,7 +20,7 @@ const registerSchema = Joi.object({
   // ...or creating a new brand in one go
   brandName: Joi.string().min(2).max(128),
   brandEmail: Joi.string().email().allow(null, ''),
-  brandUrl: Joi.string().uri().allow(null, ''),
+  brandUrl: Joi.string().allow(null, ''),
   countryId: Joi.string(), // required if brandName is provided
 
   // Default branch (optional, otherwise auto = "Main Branch")

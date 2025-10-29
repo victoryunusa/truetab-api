@@ -21,7 +21,10 @@ const requiredEnvVars = {
   // Cloudinary (for file uploads)
   CLOUDINARY_CLOUD_NAME: 'Cloudinary cloud name',
   CLOUDINARY_API_KEY: 'Cloudinary API key',
-  CLOUDINARY_API_SECRET: 'Cloudinary API secret'
+  CLOUDINARY_API_SECRET: 'Cloudinary API secret',
+  
+  // Payment Providers (at least one is required)
+  // Note: Stripe or Polar credentials are required
 };
 
 // Optional environment variables with defaults
@@ -33,7 +36,16 @@ const optionalEnvVars = {
   JWT_REFRESH_EXPIRES: '7d',
   MAIL_PORT: '465',
   MAIL_FROM_NAME: 'TrueTab',
-  APP_URL: 'http://localhost:3000'
+  APP_URL: 'http://localhost:3000',
+  
+  // Stripe (optional - for payment processing)
+  STRIPE_SECRET_KEY: '',
+  STRIPE_WEBHOOK_SECRET: '',
+  
+  // Polar (optional - for payment processing)
+  POLAR_ACCESS_TOKEN: '',
+  POLAR_WEBHOOK_SECRET: '',
+  POLAR_ORGANIZATION_ID: ''
 };
 
 function validateEnvironment() {
@@ -44,6 +56,14 @@ function validateEnvironment() {
     if (!process.env[varName]) {
       missingVars.push(`${varName} - ${description}`);
     }
+  }
+  
+  // Check that at least one payment provider is configured
+  const hasStripe = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET;
+  const hasPolar = process.env.POLAR_ACCESS_TOKEN && process.env.POLAR_WEBHOOK_SECRET;
+  
+  if (!hasStripe && !hasPolar) {
+    console.warn('⚠️  Warning: No payment provider configured. Please set up either Stripe or Polar credentials.');
   }
   
   if (missingVars.length > 0) {
@@ -99,6 +119,19 @@ function getConfig() {
       CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       API_KEY: process.env.CLOUDINARY_API_KEY,
       API_SECRET: process.env.CLOUDINARY_API_SECRET,
+    },
+    
+    // Stripe
+    STRIPE: {
+      SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+      WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    },
+    
+    // Polar
+    POLAR: {
+      ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
+      WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
+      ORGANIZATION_ID: process.env.POLAR_ORGANIZATION_ID,
     },
     
     // App
