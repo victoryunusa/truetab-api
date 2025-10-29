@@ -10,11 +10,14 @@ const prisma = new PrismaClient();
  */
 async function handlePolarWebhook(req, res) {
   try {
-    const signature = req.headers["polar-signature"];
+    // Try multiple possible header names (Polar docs are inconsistent)
+    const signature = req.headers["webhook-signature"] || 
+                     req.headers["x-polar-webhook-signature"] ||
+                     req.headers["polar-signature"];
     
     // Log for debugging
     console.log("Polar webhook received");
-    console.log("Headers:", req.headers);
+    console.log("Headers:", Object.keys(req.headers));
     console.log("Body type:", typeof req.body);
     
     if (!signature) {
