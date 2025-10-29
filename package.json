@@ -24,6 +24,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@polar-sh/sdk": "^0.40.2",
     "@prisma/client": "^6.14.0",
     "axios": "^1.13.0",
     "bcrypt": "^6.0.0",

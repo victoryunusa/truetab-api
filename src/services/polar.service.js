@@ -259,42 +259,21 @@ async function syncProductToPolar({
 /**
  * Verify webhook signature
  * @param {string} rawBody - The raw request body as a string
- * @param {string} signature - The signature from the webhook-signature header
- * @param {string} timestamp - The timestamp from the webhook headers
+ * @param {string} signature - The signature from the polar-signature header
  */
-function verifyWebhookSignature(rawBody, signature, timestamp) {
-  try {
-    if (!process.env.POLAR_WEBHOOK_SECRET) {
-      console.error('Missing POLAR_WEBHOOK_SECRET in environment');
-      return false;
-    }
-
-    if (!signature || !timestamp) {
-      console.error('Missing signature or timestamp header');
-      return false;
-    }
-
-    const secret = process.env.POLAR_WEBHOOK_SECRET;
-    const message = `${timestamp}.${rawBody}`;
-
-    // Compute HMAC SHA256 digest
-    const expected = crypto.createHmac('sha256', secret).update(message).digest('hex');
-
-    // Polar often sends multiple sigs, e.g., "t=12345,v1=abcdef"
-    const actualSig =
-      signature
-        .split(',')
-        .find(s => s.startsWith('v1='))
-        ?.split('=')[1] || signature;
-
-    const valid =
-      actualSig && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actualSig));
-
-    return !!valid;
-  } catch (err) {
-    console.error('Signature verification failed:', err.message);
-    return false;
+function verifyWebhookSignature(rawBody, signature) {
+  const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error('POLAR_WEBHOOK_SECRET is not defined');
   }
+
+  const crypto = require('crypto');
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(rawBody)
+    .digest('hex');
+
+  return signature === expectedSignature;
 }
 
 /**
