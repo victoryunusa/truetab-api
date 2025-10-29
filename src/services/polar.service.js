@@ -169,7 +169,7 @@ async function syncProductToPolar({
 
   // Create monthly product with price
   let monthlyProductId = plan?.polarProductIdMonthly;
-  
+
   // Check if the price actually exists in Polar
   let monthlyPriceExists = false;
   if (monthlyProductId) {
@@ -181,32 +181,32 @@ async function syncProductToPolar({
       monthlyProductId = null;
     }
   }
-  
+
   if (!monthlyProductId) {
     // Create product with price in one call
-    const productResponse = await polarApi.post("/products", {
+    const productResponse = await polarApi.post('/products', {
       name: `${name} - Monthly`,
       description,
       is_recurring: true,
-      recurring_interval: "month",
+      recurring_interval: 'month',
       prices: [
         {
-          amount_type: "fixed",
-          type: "recurring",
-          recurring_interval: "month",
+          amount_type: 'fixed',
+          type: 'recurring',
+          recurring_interval: 'month',
           price_amount: Math.round(priceMonthly * 100),
           price_currency: currency.toLowerCase(),
         },
       ],
     });
-    
+
     // Get the price ID from the created product
     monthlyProductId = productResponse.data.prices[0].id;
   }
 
   // Create yearly product with price
   let yearlyProductId = plan?.polarProductIdYearly;
-  
+
   // Check if the price actually exists in Polar
   let yearlyPriceExists = false;
   if (yearlyProductId) {
@@ -218,25 +218,25 @@ async function syncProductToPolar({
       yearlyProductId = null;
     }
   }
-  
+
   if (!yearlyProductId) {
     // Create product with price in one call
-    const productResponse = await polarApi.post("/products", {
+    const productResponse = await polarApi.post('/products', {
       name: `${name} - Yearly`,
       description,
       is_recurring: true,
-      recurring_interval: "year",
+      recurring_interval: 'year',
       prices: [
         {
-          amount_type: "fixed",
-          type: "recurring",
-          recurring_interval: "year",
+          amount_type: 'fixed',
+          type: 'recurring',
+          recurring_interval: 'year',
           price_amount: Math.round(priceYearly * 100),
           price_currency: currency.toLowerCase(),
         },
       ],
     });
-    
+
     // Get the price ID from the created product
     yearlyProductId = productResponse.data.prices[0].id;
   }
@@ -263,60 +263,38 @@ async function syncProductToPolar({
  * @param {string} timestamp - The timestamp from the webhook headers
  */
 function verifyWebhookSignature(rawBody, signature, timestamp) {
-  const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    throw new Error('POLAR_WEBHOOK_SECRET is not defined');
-  }
+  try {
+    if (!process.env.POLAR_WEBHOOK_SECRET) {
+      console.error('Missing POLAR_WEBHOOK_SECRET in environment');
+      return false;
+    }
 
-  const crypto = require('crypto');
-  
-  // Try multiple signature formats that Polar might use
-  
-  // Format 1: Simple HMAC of body
-  const simpleHmac = crypto
-    .createHmac('sha256', webhookSecret)
-    .update(rawBody)
-    .digest('hex');
-  
-  console.log('Signature verification attempt:');
-  console.log('Received signature:', signature);
-  console.log('Simple HMAC:', simpleHmac);
-  
-  if (signature === simpleHmac) {
-    return true;
-  }
-  
-  // Format 2: HMAC with timestamp (Stripe-style)
-  if (timestamp) {
-    const signedPayload = `${timestamp}.${rawBody}`;
-    const timestampHmac = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(signedPayload)
-      .digest('hex');
-    
-    console.log('Timestamp HMAC:', timestampHmac);
-    
-    if (signature === timestampHmac) {
-      return true;
+    if (!signature || !timestamp) {
+      console.error('Missing signature or timestamp header');
+      return false;
     }
+
+    const secret = process.env.POLAR_WEBHOOK_SECRET;
+    const message = `${timestamp}.${rawBody}`;
+
+    // Compute HMAC SHA256 digest
+    const expected = crypto.createHmac('sha256', secret).update(message).digest('hex');
+
+    // Polar often sends multiple sigs, e.g., "t=12345,v1=abcdef"
+    const actualSig =
+      signature
+        .split(',')
+        .find(s => s.startsWith('v1='))
+        ?.split('=')[1] || signature;
+
+    const valid =
+      actualSig && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actualSig));
+
+    return !!valid;
+  } catch (err) {
+    console.error('Signature verification failed:', err.message);
+    return false;
   }
-  
-  // Format 3: Check if signature has a version prefix (v1=xxx)
-  if (signature.includes('=')) {
-    const parts = signature.split(',');
-    for (const part of parts) {
-      const [version, sig] = part.split('=');
-      if (sig === simpleHmac || (timestamp && sig === crypto
-        .createHmac('sha256', webhookSecret)
-        .update(`${timestamp}.${rawBody}`)
-        .digest('hex'))) {
-        return true;
-      }
-    }
-  }
-  
-  console.log('All signature verification methods failed');
-  return false;
 }
 
 /**

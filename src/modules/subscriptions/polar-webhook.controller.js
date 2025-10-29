@@ -1,138 +1,103 @@
-const { PrismaClient, SubscriptionStatus } = require("@prisma/client");
-const polarService = require("../../services/polar.service");
-const { createInvoice } = require("./invoice.service");
-const dayjs = require("dayjs");
+'use strict';
 
+const { PrismaClient, SubscriptionStatus } = require('@prisma/client');
+const { verifyWebhookSignature } = require('../services/polar.service');
+const { createInvoice } = require('../services/invoice.service');
 const prisma = new PrismaClient();
+const dayjs = require('dayjs');
 
-/**
- * Handle Polar webhook events
- */
 async function handlePolarWebhook(req, res) {
   try {
-    // Try multiple possible header names (Polar docs are inconsistent)
-    const signature = req.headers["webhook-signature"] || 
-                     req.headers["x-polar-webhook-signature"] ||
-                     req.headers["polar-signature"];
-    
-    // Log for debugging
-    console.log("Polar webhook received");
-    console.log("Headers:", Object.keys(req.headers));
-    console.log("Body type:", typeof req.body);
-    
+    const signature =
+      req.headers['x-polar-signature'] ||
+      req.headers['webhook-signature'] ||
+      req.headers['polar-signature'];
+
+    const timestamp = req.headers['x-polar-timestamp'] || req.headers['webhook-timestamp'];
+
     if (!signature) {
-      console.error("Missing polar-signature header");
-      return res.status(400).json({ error: "Missing signature header" });
+      console.error('❌ Missing Polar signature header');
+      return res.status(400).json({ error: 'Missing signature' });
     }
-    
-    // Handle raw body
-    let rawBody;
-    if (Buffer.isBuffer(req.body)) {
-      rawBody = req.body.toString('utf8');
-    } else if (typeof req.body === 'string') {
-      rawBody = req.body;
-    } else {
-      console.error("Unexpected body type:", typeof req.body);
-      return res.status(400).json({ error: "Invalid body format" });
+
+    // Ensure we use the raw body exactly as received
+    const rawBody = req.body.toString('utf8');
+
+    // Verify signature
+    const valid = verifyWebhookSignature(rawBody, signature, timestamp);
+    if (!valid) {
+      console.error('❌ Invalid Polar webhook signature');
+      return res.status(400).json({ error: 'Invalid signature' });
     }
-    
-    console.log("Raw body length:", rawBody.length);
-    
-    let payload;
+
+    // Parse JSON safely
+    let event;
     try {
-      payload = JSON.parse(rawBody);
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError.message);
-      return res.status(400).json({ error: "Invalid JSON" });
+      event = JSON.parse(rawBody);
+    } catch (e) {
+      console.error('❌ Failed to parse JSON:', e.message);
+      return res.status(400).json({ error: 'Invalid JSON' });
     }
 
-    // Verify webhook signature using raw body
-    const timestamp = req.headers["webhook-timestamp"] || req.headers["x-polar-webhook-timestamp"];
-    
-    try {
-      if (!polarService.verifyWebhookSignature(rawBody, signature, timestamp)) {
-        console.error("Signature verification failed");
-        return res.status(400).json({ error: "Invalid signature" });
-      }
-    } catch (signatureError) {
-      console.error("Signature verification error:", signatureError.message);
-      return res.status(500).json({ error: "Signature verification failed" });
-    }
+    console.log(`✅ Polar webhook received: ${event.type}`);
 
-    const event = payload;
-    console.log("Event type:", event.type);
-
-    // Handle different event types
     switch (event.type) {
-      case "subscription.created":
+      case 'subscription.created':
         await handleSubscriptionCreated(event);
         break;
-
-      case "subscription.updated":
+      case 'subscription.updated':
         await handleSubscriptionUpdated(event);
         break;
-
-      case "subscription.canceled":
+      case 'subscription.canceled':
         await handleSubscriptionCanceled(event);
         break;
-
-      case "subscription.active":
+      case 'subscription.active':
         await handleSubscriptionActive(event);
         break;
-
-      case "subscription.past_due":
+      case 'subscription.past_due':
         await handleSubscriptionPastDue(event);
         break;
-
-      case "checkout.completed":
+      case 'checkout.completed':
         await handleCheckoutCompleted(event);
         break;
-
-      case "subscription.payment_succeeded":
+      case 'subscription.payment_succeeded':
         await handlePaymentSucceeded(event);
         break;
-
       default:
-        console.log(`Unhandled Polar event type: ${event.type}`);
+        console.log(`ℹ️ Unhandled Polar event type: ${event.type}`);
     }
 
     res.status(200).json({ received: true });
-  } catch (error) {
-    console.error("Polar webhook error:", error);
-    res.status(500).json({ error: "Webhook handler failed" });
+  } catch (err) {
+    console.error('❌ Polar webhook handler failed:', err);
+    res.status(500).json({ error: 'Webhook handler failed' });
   }
 }
 
-/**
- * Handle subscription.created event
- */
+/* ---------------- Event Handlers ---------------- */
+
 async function handleSubscriptionCreated(event) {
-  const subscription = event.data;
-  const brandId = subscription.metadata?.brandId;
+  const sub = event.data;
+  const brandId = sub.customer?.metadata?.brandId;
 
   if (!brandId) {
-    console.error("No brandId in subscription metadata");
+    console.error('Missing brandId in subscription metadata');
     return;
   }
 
-  // Find the plan by Polar product ID
-  const productId = subscription.product_id;
   const plan = await prisma.subscriptionPlan.findFirst({
     where: {
-      OR: [
-        { polarProductIdMonthly: productId },
-        { polarProductIdYearly: productId },
-      ],
+      OR: [{ polarProductIdMonthly: sub.product_id }, { polarProductIdYearly: sub.product_id }],
     },
   });
 
   if (!plan) {
-    console.error(`No plan found for Polar product ID: ${productId}`);
+    console.error(`No plan found for product ID: ${sub.product_id}`);
     return;
   }
 
-  const currentPeriodEnd = new Date(subscription.current_period_end);
-  const status = mapPolarStatus(subscription.status);
+  const currentPeriodEnd = new Date(sub.current_period_end);
+  const status = mapPolarStatus(sub.status);
 
   await prisma.subscription.upsert({
     where: { brandId },
@@ -140,217 +105,110 @@ async function handleSubscriptionCreated(event) {
       planId: plan.id,
       status,
       currentPeriodEnd,
-      polarSubscriptionId: subscription.id,
-      polarProductId: productId,
-      provider: "POLAR",
+      polarSubscriptionId: sub.id,
+      polarProductId: sub.product_id,
+      provider: 'POLAR',
     },
     create: {
       brandId,
       planId: plan.id,
       status,
       currentPeriodEnd,
-      polarSubscriptionId: subscription.id,
-      polarProductId: productId,
-      provider: "POLAR",
+      polarSubscriptionId: sub.id,
+      polarProductId: sub.product_id,
+      provider: 'POLAR',
     },
   });
 
-  console.log(
-    `Polar subscription created for brand ${brandId}: ${subscription.id}`
-  );
+  console.log(`✅ Subscription created for brand ${brandId}: ${sub.id}`);
 }
 
-/**
- * Handle subscription.updated event
- */
 async function handleSubscriptionUpdated(event) {
-  const subscription = event.data;
-  const polarSubId = subscription.id;
-
-  const existingSub = await prisma.subscription.findUnique({
-    where: { polarSubscriptionId: polarSubId },
-  });
-
-  if (!existingSub) {
-    console.error(`No subscription found for Polar ID: ${polarSubId}`);
-    return;
-  }
-
-  const currentPeriodEnd = new Date(subscription.current_period_end);
-  const status = mapPolarStatus(subscription.status);
-
-  await prisma.subscription.update({
-    where: { polarSubscriptionId: polarSubId },
+  const sub = event.data;
+  const status = mapPolarStatus(sub.status);
+  await prisma.subscription.updateMany({
+    where: { polarSubscriptionId: sub.id },
     data: {
       status,
-      currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      currentPeriodEnd: new Date(sub.current_period_end),
+      cancelAtPeriodEnd: sub.cancel_at_period_end || false,
     },
   });
-
-  console.log(`Polar subscription updated: ${polarSubId}`);
+  console.log(`🔄 Subscription updated: ${sub.id}`);
 }
 
-/**
- * Handle subscription.canceled event
- */
 async function handleSubscriptionCanceled(event) {
-  const subscription = event.data;
-  const polarSubId = subscription.id;
-
-  const existingSub = await prisma.subscription.findUnique({
-    where: { polarSubscriptionId: polarSubId },
-  });
-
-  if (!existingSub) {
-    console.error(`No subscription found for Polar ID: ${polarSubId}`);
-    return;
-  }
-
-  await prisma.subscription.update({
-    where: { polarSubscriptionId: polarSubId },
+  const sub = event.data;
+  await prisma.subscription.updateMany({
+    where: { polarSubscriptionId: sub.id },
     data: {
       status: SubscriptionStatus.CANCELED,
       canceledAt: new Date(),
       cancelAtPeriodEnd: false,
     },
   });
-
-  console.log(`Polar subscription canceled: ${polarSubId}`);
+  console.log(`🚫 Subscription canceled: ${sub.id}`);
 }
 
-/**
- * Handle subscription.active event
- */
 async function handleSubscriptionActive(event) {
-  const subscription = event.data;
-  const polarSubId = subscription.id;
-
-  const existingSub = await prisma.subscription.findUnique({
-    where: { polarSubscriptionId: polarSubId },
-  });
-
-  if (!existingSub) {
-    console.error(`No subscription found for Polar ID: ${polarSubId}`);
-    return;
-  }
-
-  const currentPeriodEnd = new Date(subscription.current_period_end);
-
-  await prisma.subscription.update({
-    where: { polarSubscriptionId: polarSubId },
+  const sub = event.data;
+  await prisma.subscription.updateMany({
+    where: { polarSubscriptionId: sub.id },
     data: {
       status: SubscriptionStatus.ACTIVE,
-      currentPeriodEnd,
+      currentPeriodEnd: new Date(sub.current_period_end),
     },
   });
-
-  console.log(`Polar subscription activated: ${polarSubId}`);
+  console.log(`✅ Subscription active: ${sub.id}`);
 }
 
-/**
- * Handle subscription.past_due event
- */
 async function handleSubscriptionPastDue(event) {
-  const subscription = event.data;
-  const polarSubId = subscription.id;
-
-  const existingSub = await prisma.subscription.findUnique({
-    where: { polarSubscriptionId: polarSubId },
+  const sub = event.data;
+  await prisma.subscription.updateMany({
+    where: { polarSubscriptionId: sub.id },
+    data: { status: SubscriptionStatus.PAST_DUE },
   });
-
-  if (!existingSub) {
-    console.error(`No subscription found for Polar ID: ${polarSubId}`);
-    return;
-  }
-
-  await prisma.subscription.update({
-    where: { polarSubscriptionId: polarSubId },
-    data: {
-      status: SubscriptionStatus.PAST_DUE,
-    },
-  });
-
-  console.log(`Polar subscription past due: ${polarSubId}`);
+  console.log(`⚠️ Subscription past due: ${sub.id}`);
 }
 
-/**
- * Handle checkout.completed event
- */
 async function handleCheckoutCompleted(event) {
   const checkout = event.data;
   const brandId = checkout.metadata?.brandId;
-
-  if (!brandId) {
-    console.error("No brandId in checkout metadata");
-    return;
-  }
-
-  // The subscription should be created via subscription.created event
-  // This is just for logging
-  console.log(
-    `Polar checkout completed for brand ${brandId}: ${checkout.id}`
-  );
+  console.log(`💳 Checkout completed for brand ${brandId}: ${checkout.id}`);
 }
 
-/**
- * Handle payment succeeded event
- */
 async function handlePaymentSucceeded(event) {
   const payment = event.data;
-  const subscriptionId = payment.subscription_id;
+  const subId = payment.subscription_id;
+  if (!subId) return;
 
-  if (!subscriptionId) {
-    return; // Not a subscription payment
-  }
-
-  // Find subscription
   const subscription = await prisma.subscription.findUnique({
-    where: { polarSubscriptionId: subscriptionId },
-    include: { plan: true, brand: true },
+    where: { polarSubscriptionId: subId },
+    include: { plan: true },
   });
+  if (!subscription) return;
 
-  if (!subscription) {
-    console.error(`Subscription not found for Polar ID: ${subscriptionId}`);
-    return;
-  }
-
-  // Create invoice record
   try {
-    const amount = payment.amount / 100; // Convert from cents
-    const periodStart = new Date(payment.period_start);
-    const periodEnd = new Date(payment.period_end);
-    
-    // Determine period type
-    const period = payment.recurring_interval === "year" ? "yearly" : "monthly";
-
     await createInvoice({
       subscriptionId: subscription.id,
       brandId: subscription.brandId,
-      amount,
+      amount: payment.amount / 100,
       currency: payment.currency.toUpperCase(),
-      period,
-      periodStart,
-      periodEnd,
-      provider: "POLAR",
+      periodStart: new Date(payment.period_start),
+      periodEnd: new Date(payment.period_end),
+      provider: 'POLAR',
       polarInvoiceId: payment.invoice_id,
       polarPaymentId: payment.id,
       planName: subscription.plan.name,
-      taxAmount: payment.tax_amount ? payment.tax_amount / 100 : 0,
-      discountAmount: 0,
     });
-
-    console.log(`Invoice created for Polar subscription ${subscriptionId}`);
-  } catch (error) {
-    console.error(`Failed to create Polar invoice record:`, error.message);
+    console.log(`🧾 Invoice created for subscription ${subId}`);
+  } catch (err) {
+    console.error('❌ Failed to create invoice:', err.message);
   }
 }
 
-/**
- * Map Polar subscription status to our SubscriptionStatus enum
- */
 function mapPolarStatus(polarStatus) {
-  const statusMap = {
+  const map = {
     active: SubscriptionStatus.ACTIVE,
     trialing: SubscriptionStatus.TRIALING,
     past_due: SubscriptionStatus.PAST_DUE,
@@ -358,10 +216,7 @@ function mapPolarStatus(polarStatus) {
     unpaid: SubscriptionStatus.PAST_DUE,
     incomplete: SubscriptionStatus.PAST_DUE,
   };
-
-  return statusMap[polarStatus] || SubscriptionStatus.EXPIRED;
+  return map[polarStatus] || SubscriptionStatus.EXPIRED;
 }
 
-module.exports = {
-  handlePolarWebhook,
-};
+module.exports = { handlePolarWebhook };
