@@ -9,6 +9,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "dev": "nodemon src/server.js",
+    "build": "node scripts/build.js",
     "seed": "node prisma/seed.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
