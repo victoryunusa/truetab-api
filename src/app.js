@@ -64,6 +64,11 @@ app.use(
   })
 );
 app.use(helmet());
+
+// Webhook routes MUST come before body parsers to get raw body
+app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), subscriptionRoutes);
+
+// Now apply body parsers for all other routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -87,6 +92,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/countries', countryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/branches', branchRoutes);
+// Webhook routes already mounted above, mount rest of subscription routes
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/invite', inviteRoutes);

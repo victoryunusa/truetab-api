@@ -23,19 +23,11 @@ const {
   downloadInvoicePDFController,
 } = require("./invoice.controller");
 
-// Stripe webhook (must be before other routes and use raw body)
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  handleWebhook
-);
+// Stripe webhook (raw body applied in app.js)
+router.post("/webhook", handleWebhook);
 
-// Polar webhook (must use raw body for signature verification)
-router.post(
-  "/webhook/polar",
-  express.raw({ type: "application/json" }),
-  handlePolarWebhook
-);
+// Polar webhook (raw body applied in app.js)
+router.post("/webhook/polar", handlePolarWebhook);
 
 // Public list plans
 router.get("/plans", listPlansController);
