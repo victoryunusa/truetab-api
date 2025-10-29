@@ -259,21 +259,64 @@ async function syncProductToPolar({
 /**
  * Verify webhook signature
  * @param {string} rawBody - The raw request body as a string
- * @param {string} signature - The signature from the polar-signature header
+ * @param {string} signature - The signature from the webhook-signature header
+ * @param {string} timestamp - The timestamp from the webhook headers
  */
-function verifyWebhookSignature(rawBody, signature) {
+function verifyWebhookSignature(rawBody, signature, timestamp) {
   const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
   if (!webhookSecret) {
     throw new Error('POLAR_WEBHOOK_SECRET is not defined');
   }
 
   const crypto = require('crypto');
-  const expectedSignature = crypto
+  
+  // Try multiple signature formats that Polar might use
+  
+  // Format 1: Simple HMAC of body
+  const simpleHmac = crypto
     .createHmac('sha256', webhookSecret)
     .update(rawBody)
     .digest('hex');
-
-  return signature === expectedSignature;
+  
+  console.log('Signature verification attempt:');
+  console.log('Received signature:', signature);
+  console.log('Simple HMAC:', simpleHmac);
+  
+  if (signature === simpleHmac) {
+    return true;
+  }
+  
+  // Format 2: HMAC with timestamp (Stripe-style)
+  if (timestamp) {
+    const signedPayload = `${timestamp}.${rawBody}`;
+    const timestampHmac = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(signedPayload)
+      .digest('hex');
+    
+    console.log('Timestamp HMAC:', timestampHmac);
+    
+    if (signature === timestampHmac) {
+      return true;
+    }
+  }
+  
+  // Format 3: Check if signature has a version prefix (v1=xxx)
+  if (signature.includes('=')) {
+    const parts = signature.split(',');
+    for (const part of parts) {
+      const [version, sig] = part.split('=');
+      if (sig === simpleHmac || (timestamp && sig === crypto
+        .createHmac('sha256', webhookSecret)
+        .update(`${timestamp}.${rawBody}`)
+        .digest('hex'))) {
+        return true;
+      }
+    }
+  }
+  
+  console.log('All signature verification methods failed');
+  return false;
 }
 
 /**

@@ -47,8 +47,10 @@ async function handlePolarWebhook(req, res) {
     }
 
     // Verify webhook signature using raw body
+    const timestamp = req.headers["webhook-timestamp"] || req.headers["x-polar-webhook-timestamp"];
+    
     try {
-      if (!polarService.verifyWebhookSignature(rawBody, signature)) {
+      if (!polarService.verifyWebhookSignature(rawBody, signature, timestamp)) {
         console.error("Signature verification failed");
         return res.status(400).json({ error: "Invalid signature" });
       }
