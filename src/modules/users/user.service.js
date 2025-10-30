@@ -34,12 +34,25 @@ async function inviteUser({ inviterId, brandId, email, role, branchIds = [] }) {
     appUrl: process.env.FRONTEND_URL,
   });
 
-  await mailer.sendMail({
-    to: email,
-    subject: `🎉 Join ${tenant.name} on Nine`,
-    html: htmlContent,
-    text: `You're invited to join ${tenant.name} as ${role}. Accept here: ${acceptUrl}`,
-  });
+  try {
+    await mailer.sendMail({
+      to: email,
+      subject: `🎉 Join ${tenant.name} on Nine`,
+      html: htmlContent,
+      text: `You're invited to join ${tenant.name} as ${role}. Accept here: ${acceptUrl}`,
+    });
+    console.log(`✓ Invite email sent successfully to ${email}`);
+  } catch (emailError) {
+    console.error('✗ Failed to send invite email:', emailError.message);
+    console.error('Mail config:', {
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_PORT,
+      from: process.env.MAIL_FROM_ADDRESS,
+      hasUsername: !!process.env.MAIL_USERNAME,
+      hasPassword: !!process.env.MAIL_PASSWORD,
+    });
+    throw new Error(`Failed to send invitation email: ${emailError.message}`);
+  }
 
   return { email, role, brandId, branchIds, inviteSent: true };
 }
