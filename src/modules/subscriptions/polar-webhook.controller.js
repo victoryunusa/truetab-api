@@ -74,6 +74,7 @@ async function handlePolarWebhook(req, res) {
 async function handleSubscriptionCreated(event) {
   const subscription = event.data;
   const customer = subscription.customer;
+  const product = subscription.product; // FIX: Get product from subscription
 
   if (!customer) {
     console.error('❌ No customer data in subscription');
@@ -88,7 +89,13 @@ async function handleSubscriptionCreated(event) {
     return;
   }
 
-  const productId = product.metadata?.planID;
+  // FIX: Check if product exists and get planID from product metadata
+  const productId = product?.metadata?.planID;
+
+  if (!productId) {
+    console.error('❌ No planID found in product metadata');
+    return;
+  }
 
   const plan = await prisma.subscriptionPlan.findFirst({
     where: {
@@ -97,7 +104,7 @@ async function handleSubscriptionCreated(event) {
   });
 
   if (!plan) {
-    console.error(`❌ No plan found for Polar product ID: ${productId}`);
+    console.error(`❌ No plan found for plan ID: ${productId}`);
     return;
   }
 
@@ -125,7 +132,7 @@ async function handleSubscriptionCreated(event) {
       status,
       currentPeriodEnd,
       polarSubscriptionId: subscription.id,
-      polarProductId: productId,
+      polarProductId: subscription.product_id, // FIX: Use subscription.product_id here
       polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
