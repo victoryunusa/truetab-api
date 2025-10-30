@@ -287,11 +287,15 @@ async function handleInvoicePaymentSucceeded(event) {
   }
 
   try {
+    // Determine period from invoice or subscription
+    const period = invoice.recurring_interval === 'year' || subscription.plan.name.includes('Yearly') ? 'yearly' : 'monthly';
+    
     await createInvoice({
       subscriptionId: subscription.id,
       brandId: subscription.brandId,
       amount: invoice.amount_due / 100, // Convert from cents
       currency: invoice.currency.toUpperCase(),
+      period,
       periodStart: parseDate(invoice.period_start) || new Date(),
       periodEnd: parseDate(invoice.period_end) || new Date(subscription.currentPeriodEnd),
       provider: 'POLAR',
@@ -322,12 +326,16 @@ async function createInvoiceForSubscription(subscription) {
 
     // Calculate amount (convert from cents to dollars)
     const amount = subscription.amount / 100;
+    
+    // Determine period (monthly or yearly) from recurring_interval
+    const period = subscription.recurring_interval === 'year' ? 'yearly' : 'monthly';
 
     await createInvoice({
       subscriptionId: dbSubscription.id,
       brandId: dbSubscription.brandId,
       amount: amount,
       currency: subscription.currency.toUpperCase(),
+      period,
       periodStart: parseDate(subscription.current_period_start) || new Date(),
       periodEnd:
         parseDate(subscription.current_period_end) || new Date(dbSubscription.currentPeriodEnd),
