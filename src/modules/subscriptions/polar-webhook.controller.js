@@ -2,7 +2,7 @@
 
 const { PrismaClient, SubscriptionStatus } = require('@prisma/client');
 const { validateEvent, WebhookVerificationError } = require('@polar-sh/sdk/webhooks');
-const { createInvoice } = require('../services/invoice.service');
+const { createInvoice } = require('./invoice.service');
 const prisma = new PrismaClient();
 
 /**
