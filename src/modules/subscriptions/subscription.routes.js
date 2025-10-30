@@ -27,7 +27,7 @@ const {
 router.post('/webhook', handleWebhook);
 
 // Polar webhook (raw body applied in app.js)
-router.post('/webhook/polar', express.raw({ type: 'application/json' }), handlePolarWebhook);
+router.post('/webhook/polar', handlePolarWebhook);
 
 // Public list plans
 router.get('/plans', listPlansController);
