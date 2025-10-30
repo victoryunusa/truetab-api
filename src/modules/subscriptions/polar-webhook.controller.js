@@ -131,9 +131,9 @@ async function handleSubscriptionCreated(event) {
     //polarCustomerId: customer.id,
     provider: 'POLAR',
     cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-    startedAt: parseDate(subscription.started_at),
-    canceledAt: parseDate(subscription.canceled_at),
-    endedAt: parseDate(subscription.ended_at),
+    //startedAt: parseDate(subscription.started_at),
+    //canceledAt: parseDate(subscription.canceled_at),
+    //endedAt: parseDate(subscription.ended_at),
   };
 
   await prisma.subscription.upsert({
@@ -147,9 +147,9 @@ async function handleSubscriptionCreated(event) {
       //polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      startedAt: parseDate(subscription.started_at),
-      canceledAt: parseDate(subscription.canceled_at),
-      endedAt: parseDate(subscription.ended_at),
+      //startedAt: parseDate(subscription.started_at),
+      //canceledAt: parseDate(subscription.canceled_at),
+      //endedAt: parseDate(subscription.ended_at),
       brand: {
         connect: { id: brandId },
       },
