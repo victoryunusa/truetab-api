@@ -165,8 +165,10 @@ async function handleSubscriptionCreated(event) {
 async function handleSubscriptionActive(event) {
   const subscription = event.data;
 
-  // Validate and parse dates
-  const currentPeriodEnd = parseDate(subscription.current_period_end);
+  // Validate and parse dates with fallback
+  const currentPeriodEnd = parseDate(subscription.current_period_end) || 
+                           parseDate(subscription.ends_at) ||
+                           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   // Update subscription status
   await prisma.subscription.updateMany({
@@ -187,16 +189,23 @@ async function handleSubscriptionActive(event) {
 async function handleSubscriptionUpdated(event) {
   const subscription = event.data;
 
+  const updateData = {
+    status: mapPolarStatus(subscription.status),
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    modifiedAt: parseDate(subscription.modified_at),
+    canceledAt: parseDate(subscription.canceled_at),
+    endedAt: parseDate(subscription.ended_at),
+  };
+
+  // Only update currentPeriodEnd if we have a valid date
+  const currentPeriodEnd = parseDate(subscription.current_period_end) || parseDate(subscription.ends_at);
+  if (currentPeriodEnd) {
+    updateData.currentPeriodEnd = currentPeriodEnd;
+  }
+
   await prisma.subscription.updateMany({
     where: { polarSubscriptionId: subscription.id },
-    data: {
-      status: mapPolarStatus(subscription.status),
-      currentPeriodEnd: parseDate(subscription.current_period_end),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      modifiedAt: parseDate(subscription.modified_at),
-      canceledAt: parseDate(subscription.canceled_at),
-      endedAt: parseDate(subscription.ended_at),
-    },
+    data: updateData,
   });
 
   console.log(`🔄 Subscription updated: ${subscription.id}`);
