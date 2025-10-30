@@ -198,6 +198,9 @@ async function syncProductToPolar({
           price_currency: currency.toLowerCase(),
         },
       ],
+      metadata: {
+        planID: plan?.id,
+      },
     });
 
     // Get the price ID from the created product
@@ -235,6 +238,9 @@ async function syncProductToPolar({
           price_currency: currency.toLowerCase(),
         },
       ],
+      metadata: {
+        planID: plan?.id,
+      },
     });
 
     // Get the price ID from the created product
