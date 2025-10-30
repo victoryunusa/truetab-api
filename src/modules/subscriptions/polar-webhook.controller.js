@@ -108,41 +108,44 @@ async function handleSubscriptionCreated(event) {
     return;
   }
 
-  const currentPeriodEnd = parseDate(subscription.current_period_end);
+  // Parse and validate dates
+  const currentPeriodEnd = parseDate(subscription.current_period_end) || 
+                           parseDate(subscription.ends_at) ||
+                           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default to 30 days from now
+  
   const status = mapPolarStatus(subscription.status);
+  const polarProductId = subscription.product_id || product?.id;
+
+  if (!polarProductId) {
+    console.error('❌ No product_id found in subscription');
+    return;
+  }
+
+  const subscriptionData = {
+    planId: plan.id,
+    status,
+    currentPeriodEnd,
+    polarSubscriptionId: subscription.id,
+    polarProductId,
+    polarCustomerId: customer.id,
+    provider: 'POLAR',
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    startedAt: parseDate(subscription.started_at),
+    canceledAt: parseDate(subscription.canceled_at),
+    endedAt: parseDate(subscription.ended_at),
+  };
 
   await prisma.subscription.upsert({
     where: { brandId },
-    update: {
-      planId: plan.id,
-      status,
-      currentPeriodEnd,
-      polarSubscriptionId: subscription.id,
-      polarProductId: subscription.product_id,
-      polarCustomerId: customer.id,
-      provider: 'POLAR',
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      startedAt: parseDate(subscription.started_at),
-      canceledAt: parseDate(subscription.canceled_at),
-      endedAt: parseDate(subscription.ended_at),
-    },
+    update: subscriptionData,
     create: {
+      ...subscriptionData,
       brand: {
         connect: { id: brandId },
       },
       plan: {
         connect: { id: plan.id },
       },
-      status,
-      currentPeriodEnd,
-      polarSubscriptionId: subscription.id,
-      polarProductId: subscription.product_id,
-      polarCustomerId: customer.id,
-      provider: 'POLAR',
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      startedAt: parseDate(subscription.started_at),
-      canceledAt: parseDate(subscription.canceled_at),
-      endedAt: parseDate(subscription.ended_at),
     },
   });
 
