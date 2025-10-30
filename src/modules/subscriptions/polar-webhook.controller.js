@@ -127,12 +127,16 @@ async function handleSubscriptionCreated(event) {
       endedAt: parseDate(subscription.ended_at),
     },
     create: {
-      brandId,
-      planId: plan.id,
+      brand: {
+        connect: { id: brandId },
+      },
+      plan: {
+        connect: { id: plan.id },
+      },
       status,
       currentPeriodEnd,
       polarSubscriptionId: subscription.id,
-      polarProductId: subscription.product_id, // FIX: Use subscription.product_id here
+      polarProductId: subscription.product_id,
       polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
