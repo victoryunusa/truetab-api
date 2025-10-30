@@ -63,7 +63,41 @@ app.use(
     credentials: true,
   })
 );
-app.use(helmet());
+
+// CORS configuration optimized for Render
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin && isProduction) return callback(null, true);
+
+      const allowed = process.env.ALLOWED_ORIGINS?.split(',') || [];
+      if (!origin || allowed.includes(origin) || allowed.includes('*')) {
+        return callback(null, true);
+      }
+      console.warn(`CORS blocked for origin: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Brand-ID',
+      'X-Branch-ID',
+      'X-Requested-With',
+    ],
+  })
+);
+
+// Security headers optimized for APIs
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false, // Disable for API
+    crossOriginEmbedderPolicy: false, // Disable for API
+  })
+);
 
 // Webhook routes MUST come before body parsers to get raw body
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), subscriptionRoutes);
@@ -84,6 +118,14 @@ app.use(
     customCss: '.swagger-ui .topbar { display: none }',
   })
 );
+
+app.use((req, res, next) => {
+  // Set timeout for all requests (30 seconds)
+  req.setTimeout(30000, () => {
+    console.warn(`Request timeout for ${req.method} ${req.url}`);
+  });
+  next();
+});
 
 // Routes
 app.use('/api/admin/demo-requests', demoRoutes);
