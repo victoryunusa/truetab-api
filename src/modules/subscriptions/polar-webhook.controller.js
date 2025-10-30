@@ -88,14 +88,12 @@ async function handleSubscriptionCreated(event) {
     return;
   }
 
-  const productId = subscription.price_id;
+  const productId = prodduct.metadata?.planID;
 
   console.log(subscription);
 
   const plan = await prisma.subscriptionPlan.findFirst({
-    where: {
-      OR: [{ polarProductIdMonthly: productId }, { polarProductIdYearly: productId }],
-    },
+    where: { id: productId },
   });
 
   if (!plan) {
