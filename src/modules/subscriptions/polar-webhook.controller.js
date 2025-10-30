@@ -90,6 +90,8 @@ async function handleSubscriptionCreated(event) {
 
   const productId = subscription.price_id;
 
+  console.log(subscription);
+
   const plan = await prisma.subscriptionPlan.findFirst({
     where: {
       OR: [{ polarProductIdMonthly: productId }, { polarProductIdYearly: productId }],
