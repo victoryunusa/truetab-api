@@ -109,10 +109,11 @@ async function handleSubscriptionCreated(event) {
   }
 
   // Parse and validate dates
-  const currentPeriodEnd = parseDate(subscription.current_period_end) || 
-                           parseDate(subscription.ends_at) ||
-                           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default to 30 days from now
-  
+  const currentPeriodEnd =
+    parseDate(subscription.current_period_end) ||
+    parseDate(subscription.ends_at) ||
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default to 30 days from now
+
   const status = mapPolarStatus(subscription.status);
   const polarProductId = subscription.product_id || product?.id;
 
@@ -127,7 +128,7 @@ async function handleSubscriptionCreated(event) {
     currentPeriodEnd,
     polarSubscriptionId: subscription.id,
     polarProductId,
-    polarCustomerId: customer.id,
+    //polarCustomerId: customer.id,
     provider: 'POLAR',
     cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
     startedAt: parseDate(subscription.started_at),
@@ -143,7 +144,7 @@ async function handleSubscriptionCreated(event) {
       currentPeriodEnd,
       polarSubscriptionId: subscription.id,
       polarProductId,
-      polarCustomerId: customer.id,
+      //polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
       startedAt: parseDate(subscription.started_at),
