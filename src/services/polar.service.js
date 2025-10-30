@@ -51,9 +51,20 @@ async function getOrCreateCustomer({ brandId, email, name, metadata = {} }) {
     select: { polarCustomerId: true },
   });
 
+  // Try to fetch existing customer if we have an ID
   if (brand?.polarCustomerId) {
-    const response = await polarApi.get(`/customers/${brand.polarCustomerId}`);
-    return response.data;
+    try {
+      const response = await polarApi.get(`/customers/${brand.polarCustomerId}`);
+      return response.data;
+    } catch (error) {
+      // Customer doesn't exist in Polar (404) or other error
+      // Clear the stored ID and create a new customer
+      console.log(`Customer ${brand.polarCustomerId} not found in Polar, creating new one`);
+      await prisma.brand.update({
+        where: { id: brandId },
+        data: { polarCustomerId: null },
+      });
+    }
   }
 
   // Create new Polar customer
