@@ -88,12 +88,12 @@ async function handleSubscriptionCreated(event) {
     return;
   }
 
-  const productId = prodduct.metadata?.planID;
-
-  console.log(subscription);
+  const productId = product.metadata?.planID;
 
   const plan = await prisma.subscriptionPlan.findFirst({
-    where: { id: productId },
+    where: {
+      id: productId,
+    },
   });
 
   if (!plan) {
@@ -101,7 +101,7 @@ async function handleSubscriptionCreated(event) {
     return;
   }
 
-  const currentPeriodEnd = new Date(subscription.current_period_end);
+  const currentPeriodEnd = parseDate(subscription.current_period_end);
   const status = mapPolarStatus(subscription.status);
 
   await prisma.subscription.upsert({
@@ -115,9 +115,9 @@ async function handleSubscriptionCreated(event) {
       polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      startedAt: subscription.started_at ? new Date(subscription.started_at) : null,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at) : null,
-      endedAt: subscription.ended_at ? new Date(subscription.ended_at) : null,
+      startedAt: parseDate(subscription.started_at),
+      canceledAt: parseDate(subscription.canceled_at),
+      endedAt: parseDate(subscription.ended_at),
     },
     create: {
       brandId,
@@ -129,9 +129,9 @@ async function handleSubscriptionCreated(event) {
       polarCustomerId: customer.id,
       provider: 'POLAR',
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      startedAt: subscription.started_at ? new Date(subscription.started_at) : null,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at) : null,
-      endedAt: subscription.ended_at ? new Date(subscription.ended_at) : null,
+      startedAt: parseDate(subscription.started_at),
+      canceledAt: parseDate(subscription.canceled_at),
+      endedAt: parseDate(subscription.ended_at),
     },
   });
 
@@ -141,12 +141,15 @@ async function handleSubscriptionCreated(event) {
 async function handleSubscriptionActive(event) {
   const subscription = event.data;
 
+  // Validate and parse dates
+  const currentPeriodEnd = parseDate(subscription.current_period_end);
+
   // Update subscription status
   await prisma.subscription.updateMany({
     where: { polarSubscriptionId: subscription.id },
     data: {
       status: SubscriptionStatus.ACTIVE,
-      currentPeriodEnd: new Date(subscription.current_period_end),
+      currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
     },
   });
@@ -164,11 +167,11 @@ async function handleSubscriptionUpdated(event) {
     where: { polarSubscriptionId: subscription.id },
     data: {
       status: mapPolarStatus(subscription.status),
-      currentPeriodEnd: new Date(subscription.current_period_end),
+      currentPeriodEnd: parseDate(subscription.current_period_end),
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      modifiedAt: new Date(subscription.modified_at),
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at) : null,
-      endedAt: subscription.ended_at ? new Date(subscription.ended_at) : null,
+      modifiedAt: parseDate(subscription.modified_at),
+      canceledAt: parseDate(subscription.canceled_at),
+      endedAt: parseDate(subscription.ended_at),
     },
   });
 
@@ -182,9 +185,9 @@ async function handleSubscriptionCanceled(event) {
     where: { polarSubscriptionId: subscription.id },
     data: {
       status: SubscriptionStatus.CANCELED,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at) : new Date(),
+      canceledAt: parseDate(subscription.canceled_at) || new Date(),
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      endsAt: subscription.ends_at ? new Date(subscription.ends_at) : null,
+      endsAt: parseDate(subscription.ends_at),
     },
   });
 
@@ -214,7 +217,7 @@ async function handleSubscriptionRevoked(event) {
     where: { polarSubscriptionId: subscription.id },
     data: {
       status: SubscriptionStatus.REVOKED,
-      endedAt: subscription.ended_at ? new Date(subscription.ended_at) : new Date(),
+      endedAt: parseDate(subscription.ended_at) || new Date(),
     },
   });
 
@@ -256,10 +259,8 @@ async function handleInvoicePaymentSucceeded(event) {
       brandId: subscription.brandId,
       amount: invoice.amount_due / 100, // Convert from cents
       currency: invoice.currency.toUpperCase(),
-      periodStart: invoice.period_start ? new Date(invoice.period_start) : new Date(),
-      periodEnd: invoice.period_end
-        ? new Date(invoice.period_end)
-        : new Date(subscription.currentPeriodEnd),
+      periodStart: parseDate(invoice.period_start) || new Date(),
+      periodEnd: parseDate(invoice.period_end) || new Date(subscription.currentPeriodEnd),
       provider: 'POLAR',
       polarInvoiceId: invoice.id,
       polarPaymentIntentId: invoice.payment_intent_id,
@@ -294,8 +295,9 @@ async function createInvoiceForSubscription(subscription) {
       brandId: dbSubscription.brandId,
       amount: amount,
       currency: subscription.currency.toUpperCase(),
-      periodStart: new Date(subscription.current_period_start),
-      periodEnd: new Date(subscription.current_period_end),
+      periodStart: parseDate(subscription.current_period_start) || new Date(),
+      periodEnd:
+        parseDate(subscription.current_period_end) || new Date(dbSubscription.currentPeriodEnd),
       provider: 'POLAR',
       polarSubscriptionId: subscription.id,
       polarProductId: subscription.product_id,
@@ -307,6 +309,13 @@ async function createInvoiceForSubscription(subscription) {
   } catch (err) {
     console.error('❌ Failed to create invoice for active subscription:', err.message);
   }
+}
+
+function parseDate(dateString) {
+  if (!dateString) return null;
+
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? null : date;
 }
 
 function mapPolarStatus(polarStatus) {
