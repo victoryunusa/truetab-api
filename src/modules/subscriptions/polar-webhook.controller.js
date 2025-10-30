@@ -139,7 +139,16 @@ async function handleSubscriptionCreated(event) {
     where: { brandId },
     update: subscriptionData,
     create: {
-      ...subscriptionData,
+      status,
+      currentPeriodEnd,
+      polarSubscriptionId: subscription.id,
+      polarProductId,
+      polarCustomerId: customer.id,
+      provider: 'POLAR',
+      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      startedAt: parseDate(subscription.started_at),
+      canceledAt: parseDate(subscription.canceled_at),
+      endedAt: parseDate(subscription.ended_at),
       brand: {
         connect: { id: brandId },
       },
