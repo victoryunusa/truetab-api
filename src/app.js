@@ -42,6 +42,7 @@ const poRoutes = require('./modules/inventory/po.routes');
 const adjustmentsRoutes = require('./modules/inventory/adjustment.routes');
 const transfersRoutes = require('./modules/inventory/transfer.routes');
 const promotionRoutes = require('./modules/promotions/promotion.routes');
+const aiRoutes = require('./modules/ai/ai.routes');
 
 //Admin routes
 const demoRoutes = require('./modules/admin/demo-requests/demo.routes');
@@ -69,7 +70,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin && isProduction) return callback(null, true);
+      if (!origin) return callback(null, true);
 
       const allowed = process.env.ALLOWED_ORIGINS?.split(',') || [];
       if (!origin || allowed.includes(origin) || allowed.includes('*')) {
@@ -159,6 +160,7 @@ app.use('/api/inventory', adjustmentsRoutes);
 app.use('/api/inventory', transfersRoutes);
 
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Healthcheck
 app.get('/api/health', async (req, res) => {

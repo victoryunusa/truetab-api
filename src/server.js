@@ -69,10 +69,10 @@ async function startServer() {
     await connectDatabase();
 
     const server = USE_HTTPS
-      ? https.createServer(httpsOptions, app).listen(PORT, '0.0.0.0', () => {
+      ? https.createServer(httpsOptions, app).listen(PORT, () => {
           console.log(`🚀 Server running on https://0.0.0.0:${PORT}`);
         })
-      : app.listen(PORT, '0.0.0.0', () => {
+      : app.listen(PORT, () => {
           console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
         });
 
