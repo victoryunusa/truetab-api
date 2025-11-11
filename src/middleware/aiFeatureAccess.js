@@ -1,5 +1,5 @@
 const { PrismaClient, SubscriptionStatus } = require('@prisma/client');
-const logger = require('../utils/logger');
+const { logger } = require('../utils/logger');
 
 const prisma = new PrismaClient();
 

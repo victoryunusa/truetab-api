@@ -1,5 +1,5 @@
 const openai = require('../../services/openai.service');
-const logger = require('../../utils/logger');
+const { logger } = require('../../utils/logger');
 
 class ChatbotService {
   constructor() {

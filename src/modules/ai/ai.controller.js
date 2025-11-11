@@ -4,7 +4,7 @@ const nlpService = require('./nlp.service');
 const pricingService = require('./pricing.service');
 const chatbotService = require('./chatbot.service');
 const analyticsService = require('./analytics.service');
-const logger = require('../../utils/logger');
+const { logger } = require('../../utils/logger');
 
 class AIController {
   // === RECOMMENDATIONS ===

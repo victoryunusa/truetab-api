@@ -1,6 +1,6 @@
 const prisma = require('../../lib/prisma');
 const openai = require('../../services/openai.service');
-const logger = require('../../utils/logger');
+const { logger } = require('../../utils/logger');
 const dayjs = require('dayjs');
 
 class AnalyticsService {
