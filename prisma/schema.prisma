@@ -94,6 +94,7 @@ model Brand {
   users               User[]                @relation("BrandUsers")
   WaitlistEntry       WaitlistEntry[]
   Zone                Zone[]
+  AIUsageLog          AIUsageLog[]
 
   @@unique([ownerId, name])
   @@map("brands")
@@ -254,6 +255,20 @@ model AuditLog {
   @@index([userId])
   @@index([entity, entityId])
   @@map("audit_logs")
+}
+
+model AIUsageLog {
+  id        String   @id @default(uuid())
+  brandId   String
+  feature   String
+  timestamp DateTime @default(now())
+  metadata  Json?
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@index([timestamp])
+  @@index([feature])
+  @@map("ai_usage_logs")
 }
 
 model Country {

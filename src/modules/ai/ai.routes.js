@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const aiController = require('./ai.controller');
-const { authenticate } = require('../../middleware/auth');
+const { auth } = require('../../middleware/auth');
+const {
+  AI_FEATURES,
+  requireAIFeature,
+  trackAIUsage,
+} = require('../../middleware/aiFeatureAccess');
 
 // All AI routes require authentication
-router.use(authenticate);
+router.use(auth());
 
 // === RECOMMENDATIONS ===
 /**
@@ -36,7 +41,12 @@ router.use(authenticate);
  *       200:
  *         description: Menu recommendations
  */
-router.get('/recommendations', aiController.getRecommendations);
+router.get(
+  '/recommendations',
+  requireAIFeature(AI_FEATURES.RECOMMENDATIONS),
+  trackAIUsage(AI_FEATURES.RECOMMENDATIONS),
+  aiController.getRecommendations
+);
 
 /**
  * @swagger
@@ -61,7 +71,12 @@ router.get('/recommendations', aiController.getRecommendations);
  *       200:
  *         description: Similar items
  */
-router.get('/recommendations/similar/:itemId', aiController.getSimilarItems);
+router.get(
+  '/recommendations/similar/:itemId',
+  requireAIFeature(AI_FEATURES.RECOMMENDATIONS),
+  trackAIUsage(AI_FEATURES.RECOMMENDATIONS),
+  aiController.getSimilarItems
+);
 
 // === FORECASTING ===
 /**
@@ -89,7 +104,12 @@ router.get('/recommendations/similar/:itemId', aiController.getSimilarItems);
  *       200:
  *         description: Demand forecast
  */
-router.get('/forecast/demand', aiController.forecastDemand);
+router.get(
+  '/forecast/demand',
+  requireAIFeature(AI_FEATURES.FORECASTING),
+  trackAIUsage(AI_FEATURES.FORECASTING),
+  aiController.forecastDemand
+);
 
 /**
  * @swagger
@@ -110,7 +130,12 @@ router.get('/forecast/demand', aiController.forecastDemand);
  *       200:
  *         description: Inventory forecast
  */
-router.get('/forecast/inventory', aiController.forecastInventory);
+router.get(
+  '/forecast/inventory',
+  requireAIFeature(AI_FEATURES.FORECASTING),
+  trackAIUsage(AI_FEATURES.FORECASTING),
+  aiController.forecastInventory
+);
 
 // === NLP ===
 /**
@@ -137,7 +162,12 @@ router.get('/forecast/inventory', aiController.forecastInventory);
  *       200:
  *         description: Parsed order
  */
-router.post('/nlp/parse-order', aiController.parseOrder);
+router.post(
+  '/nlp/parse-order',
+  requireAIFeature(AI_FEATURES.NLP),
+  trackAIUsage(AI_FEATURES.NLP),
+  aiController.parseOrder
+);
 
 /**
  * @swagger
@@ -159,7 +189,12 @@ router.post('/nlp/parse-order', aiController.parseOrder);
  *       200:
  *         description: Search results
  */
-router.get('/nlp/search', aiController.searchMenu);
+router.get(
+  '/nlp/search',
+  requireAIFeature(AI_FEATURES.NLP),
+  trackAIUsage(AI_FEATURES.NLP),
+  aiController.searchMenu
+);
 
 /**
  * @swagger
@@ -185,7 +220,12 @@ router.get('/nlp/search', aiController.searchMenu);
  *       200:
  *         description: Extracted intent
  */
-router.post('/nlp/intent', aiController.extractIntent);
+router.post(
+  '/nlp/intent',
+  requireAIFeature(AI_FEATURES.NLP),
+  trackAIUsage(AI_FEATURES.NLP),
+  aiController.extractIntent
+);
 
 // === PRICING ===
 /**
@@ -206,7 +246,12 @@ router.post('/nlp/intent', aiController.extractIntent);
  *       200:
  *         description: Pricing suggestions
  */
-router.get('/pricing/suggestions', aiController.getPricingSuggestions);
+router.get(
+  '/pricing/suggestions',
+  requireAIFeature(AI_FEATURES.PRICING),
+  trackAIUsage(AI_FEATURES.PRICING),
+  aiController.getPricingSuggestions
+);
 
 /**
  * @swagger
@@ -226,7 +271,12 @@ router.get('/pricing/suggestions', aiController.getPricingSuggestions);
  *       200:
  *         description: Price elasticity analysis
  */
-router.get('/pricing/elasticity/:itemId', aiController.analyzePriceElasticity);
+router.get(
+  '/pricing/elasticity/:itemId',
+  requireAIFeature(AI_FEATURES.PRICING),
+  trackAIUsage(AI_FEATURES.PRICING),
+  aiController.analyzePriceElasticity
+);
 
 /**
  * @swagger
@@ -254,7 +304,12 @@ router.get('/pricing/elasticity/:itemId', aiController.analyzePriceElasticity);
  *       200:
  *         description: Bundle pricing suggestion
  */
-router.post('/pricing/bundle', aiController.suggestBundlePricing);
+router.post(
+  '/pricing/bundle',
+  requireAIFeature(AI_FEATURES.PRICING),
+  trackAIUsage(AI_FEATURES.PRICING),
+  aiController.suggestBundlePricing
+);
 
 // === CHATBOT ===
 /**
@@ -292,7 +347,12 @@ router.post('/pricing/bundle', aiController.suggestBundlePricing);
  *       200:
  *         description: Bot response
  */
-router.post('/chat', aiController.chat);
+router.post(
+  '/chat',
+  requireAIFeature(AI_FEATURES.CHATBOT),
+  trackAIUsage(AI_FEATURES.CHATBOT),
+  aiController.chat
+);
 
 /**
  * @swagger
@@ -313,7 +373,12 @@ router.post('/chat', aiController.chat);
  *       200:
  *         description: Quick answer
  */
-router.get('/chat/quick-answer', aiController.getQuickAnswer);
+router.get(
+  '/chat/quick-answer',
+  requireAIFeature(AI_FEATURES.CHATBOT),
+  trackAIUsage(AI_FEATURES.CHATBOT),
+  aiController.getQuickAnswer
+);
 
 /**
  * @swagger
@@ -333,7 +398,12 @@ router.get('/chat/quick-answer', aiController.getQuickAnswer);
  *       200:
  *         description: Suggested topics
  */
-router.get('/chat/help-topics', aiController.suggestHelpTopics);
+router.get(
+  '/chat/help-topics',
+  requireAIFeature(AI_FEATURES.CHATBOT),
+  trackAIUsage(AI_FEATURES.CHATBOT),
+  aiController.suggestHelpTopics
+);
 
 /**
  * @swagger
@@ -359,7 +429,12 @@ router.get('/chat/help-topics', aiController.suggestHelpTopics);
  *       200:
  *         description: Troubleshooting steps
  */
-router.post('/chat/troubleshoot', aiController.getTroubleshooting);
+router.post(
+  '/chat/troubleshoot',
+  requireAIFeature(AI_FEATURES.CHATBOT),
+  trackAIUsage(AI_FEATURES.CHATBOT),
+  aiController.getTroubleshooting
+);
 
 // === ANALYTICS ===
 /**
@@ -381,7 +456,12 @@ router.post('/chat/troubleshoot', aiController.getTroubleshooting);
  *       200:
  *         description: Business insights
  */
-router.get('/analytics/insights', aiController.getBusinessInsights);
+router.get(
+  '/analytics/insights',
+  requireAIFeature(AI_FEATURES.ANALYTICS),
+  trackAIUsage(AI_FEATURES.ANALYTICS),
+  aiController.getBusinessInsights
+);
 
 /**
  * @swagger
@@ -397,6 +477,8 @@ router.get('/analytics/insights', aiController.getBusinessInsights);
  */
 router.get(
   '/analytics/customer-behavior',
+  requireAIFeature(AI_FEATURES.ANALYTICS),
+  trackAIUsage(AI_FEATURES.ANALYTICS),
   aiController.analyzeCustomerBehavior
 );
 
@@ -419,7 +501,12 @@ router.get(
  *       200:
  *         description: Popular combinations
  */
-router.get('/analytics/combinations', aiController.getPopularCombinations);
+router.get(
+  '/analytics/combinations',
+  requireAIFeature(AI_FEATURES.ANALYTICS),
+  trackAIUsage(AI_FEATURES.ANALYTICS),
+  aiController.getPopularCombinations
+);
 
 /**
  * @swagger
@@ -433,6 +520,11 @@ router.get('/analytics/combinations', aiController.getPopularCombinations);
  *       200:
  *         description: Menu performance analysis
  */
-router.get('/analytics/menu-performance', aiController.analyzeMenuPerformance);
+router.get(
+  '/analytics/menu-performance',
+  requireAIFeature(AI_FEATURES.ANALYTICS),
+  trackAIUsage(AI_FEATURES.ANALYTICS),
+  aiController.analyzeMenuPerformance
+);
 
 module.exports = router;

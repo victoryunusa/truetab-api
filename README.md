@@ -103,7 +103,12 @@ A comprehensive Point of Sale (POS) and restaurant management API built with Nod
 - `/api/ai/chat` - Support chatbot
 - `/api/ai/analytics` - Business insights and analytics
 
-For detailed AI documentation, see [AI_FEATURES.md](AI_FEATURES.md)
+**Subscription-Based Access**
+All AI features are controlled by subscription plans ($29-$299/month).
+- **Quick Start**: [AI_QUICK_START.md](AI_QUICK_START.md)
+- **Full AI Docs**: [AI_FEATURES.md](AI_FEATURES.md)
+- **Subscription Integration**: [AI_SUBSCRIPTION_INTEGRATION.md](AI_SUBSCRIPTION_INTEGRATION.md)
+- **Quick Reference**: [AI_SUBSCRIPTION_QUICKREF.md](AI_SUBSCRIPTION_QUICKREF.md)
 
 ## Environment Variables
 
