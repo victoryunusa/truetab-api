@@ -64,10 +64,10 @@ async function register(data) {
       const country = await tx.country.findUnique({ where: { id: countryId } });
       if (!country) throw new Error('Invalid countryId');
 
-      const defaultPlan = await tx.subscriptionPlan.findFirst({
-        where: { isDefault: true },
-      });
-      if (!defaultPlan) throw new Error('No default plan configured');
+      // const defaultPlan = await tx.subscriptionPlan.findFirst({
+      //   where: { isDefault: true },
+      // });
+      // if (!defaultPlan) throw new Error('No default plan configured');
 
       // Create brand
       brand = await tx.brand.create({
@@ -88,15 +88,15 @@ async function register(data) {
       });
 
       // Free trial subscription
-      await tx.subscription.create({
-        data: {
-          brandId: brand.id,
-          status: 'TRIALING',
-          trialEndsAt: dayjs().add(14, 'day').toDate(),
-          currentPeriodEnd: dayjs().add(14, 'day').toDate(),
-          planId: defaultPlan.id,
-        },
-      });
+      // await tx.subscription.create({
+      //   data: {
+      //     brandId: brand.id,
+      //     status: 'TRIALING',
+      //     trialEndsAt: dayjs().add(14, 'day').toDate(),
+      //     currentPeriodEnd: dayjs().add(14, 'day').toDate(),
+      //     planId: defaultPlan.id,
+      //   },
+      // });
 
       // Create branch
       branch = await tx.branch.create({
