@@ -166,9 +166,10 @@ async function handleSubscriptionActive(event) {
   const subscription = event.data;
 
   // Validate and parse dates with fallback
-  const currentPeriodEnd = parseDate(subscription.current_period_end) || 
-                           parseDate(subscription.ends_at) ||
-                           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const currentPeriodEnd =
+    parseDate(subscription.current_period_end) ||
+    parseDate(subscription.ends_at) ||
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   // Update subscription status
   await prisma.subscription.updateMany({
@@ -192,13 +193,14 @@ async function handleSubscriptionUpdated(event) {
   const updateData = {
     status: mapPolarStatus(subscription.status),
     cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-    modifiedAt: parseDate(subscription.modified_at),
+    // modifiedAt: parseDate(subscription.modified_at),
     canceledAt: parseDate(subscription.canceled_at),
-    endedAt: parseDate(subscription.ended_at),
+    // endedAt: parseDate(subscription.ended_at),
   };
 
   // Only update currentPeriodEnd if we have a valid date
-  const currentPeriodEnd = parseDate(subscription.current_period_end) || parseDate(subscription.ends_at);
+  const currentPeriodEnd =
+    parseDate(subscription.current_period_end) || parseDate(subscription.ends_at);
   if (currentPeriodEnd) {
     updateData.currentPeriodEnd = currentPeriodEnd;
   }
@@ -288,8 +290,11 @@ async function handleInvoicePaymentSucceeded(event) {
 
   try {
     // Determine period from invoice or subscription
-    const period = invoice.recurring_interval === 'year' || subscription.plan.name.includes('Yearly') ? 'yearly' : 'monthly';
-    
+    const period =
+      invoice.recurring_interval === 'year' || subscription.plan.name.includes('Yearly')
+        ? 'yearly'
+        : 'monthly';
+
     await createInvoice({
       subscriptionId: subscription.id,
       brandId: subscription.brandId,
@@ -326,7 +331,7 @@ async function createInvoiceForSubscription(subscription) {
 
     // Calculate amount (convert from cents to dollars)
     const amount = subscription.amount / 100;
-    
+
     // Determine period (monthly or yearly) from recurring_interval
     const period = subscription.recurring_interval === 'year' ? 'yearly' : 'monthly';
 
