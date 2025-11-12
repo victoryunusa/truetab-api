@@ -43,6 +43,10 @@ const adjustmentsRoutes = require('./modules/inventory/adjustment.routes');
 const transfersRoutes = require('./modules/inventory/transfer.routes');
 const promotionRoutes = require('./modules/promotions/promotion.routes');
 const aiRoutes = require('./modules/ai/ai.routes');
+const shiftsRoutes = require('./modules/shifts/shifts.routes');
+const payrollRoutes = require('./modules/payroll/payroll.routes');
+const loyaltyRoutes = require('./modules/loyalty/loyalty.routes');
+const reservationRoutes = require('./modules/reservations/reservation.routes');
 
 //Admin routes
 const demoRoutes = require('./modules/admin/demo-requests/demo.routes');
@@ -161,6 +165,17 @@ app.use('/api/inventory', transfersRoutes);
 
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/shifts', shiftsRoutes);
+app.use('/api/payroll', payrollRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/reservations', reservationRoutes);
+
+app.use('/api/online-menu', require('./modules/online-ordering/menu.routes'));
+app.use('/api/cart', require('./modules/online-ordering/cart.routes'));
+app.use('/api/checkout', require('./modules/online-ordering/checkout.routes'));
+app.use('/api/wallet', require('./modules/wallet/wallet.routes'));
+app.use('/api/wallet/bank-accounts', require('./modules/wallet/bank-account.routes'));
+app.use('/api/webhooks', require('./modules/online-ordering/webhook.routes'));
 
 // Healthcheck
 app.get('/api/health', async (req, res) => {

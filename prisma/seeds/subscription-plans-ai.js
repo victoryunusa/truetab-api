@@ -41,7 +41,7 @@ const PLANS = [
   // },
   {
     name: 'Nine Base',
-    description: 'Advanced features with AI-powered insights',
+    description: 'Perfect for small restaurants getting started',
     priceMonthly: 99,
     priceYearly: 990, // ~17% discount
     currency: 'USD',
@@ -59,6 +59,8 @@ const PLANS = [
       online_ordering: true,
       multi_branch: true,
       kitchen_display: true,
+      payroll: true,
+      shift_management: true,
 
       // AI Features - Core Suite
       ai_enabled: true,
@@ -74,7 +76,7 @@ const PLANS = [
   },
   {
     name: 'Nine Core',
-    description: 'Full AI suite for growing restaurant chains',
+    description: 'Advanced features with AI-powered insights',
     priceMonthly: 199,
     priceYearly: 1990, // ~17% discount
     currency: 'USD',
@@ -95,6 +97,9 @@ const PLANS = [
       kitchen_display: true,
       delivery_integration: true,
       loyalty_program: true,
+      payroll: true,
+      reservations: true,
+      shift_management: true,
 
       // AI Features - Full Suite
       ai_enabled: true,
@@ -118,7 +123,7 @@ const PLANS = [
   },
   {
     name: 'Nine Pro',
-    description: 'Unlimited AI + white-label for large enterprises',
+    description: 'Full AI suite for growing restaurant chains',
     priceMonthly: 499,
     priceYearly: 4990, // ~17% discount
     currency: 'USD',
@@ -141,6 +146,9 @@ const PLANS = [
       loyalty_program: true,
       white_label: true,
       custom_domain: true,
+      payroll: true,
+      reservations: true,
+      shift_management: true,
 
       // AI Features - Full Suite + Unlimited
       ai_enabled: true,

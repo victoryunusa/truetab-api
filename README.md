@@ -12,6 +12,8 @@ A comprehensive Point of Sale (POS) and restaurant management API built with Nod
 - **Staff Management**: Tips, settlements, and user management
 - **API Documentation**: Auto-generated Swagger/OpenAPI documentation
 - **🤖 AI Features**: Smart recommendations, forecasting, NLP, dynamic pricing, chatbot, and analytics (See [AI_FEATURES.md](AI_FEATURES.md))
+- **🛒 Online Ordering**: QR code menus, cart management, online payments, and delivery integration (See [ONLINE_ORDERING_GUIDE.md](ONLINE_ORDERING_GUIDE.md))
+- **💰 Wallet System**: Restaurant earnings management, automated payouts, and bank account integration
 
 ## Tech Stack
 
