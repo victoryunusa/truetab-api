@@ -53,23 +53,14 @@ const demoRoutes = require('./modules/admin/demo-requests/demo.routes');
 
 const app = express();
 
+// Trust proxy - Required for rate limiting behind proxies (Render, etc.)
+app.set('trust proxy', 1);
+
 // Core Middlewares
 app.use(requestId);
 app.use(generalLimiter);
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowed = process.env.ALLOWED_ORIGINS?.split(',') || [];
-      if (!origin || allowed.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  })
-);
 
-// CORS configuration optimized for Render
+// CORS configuration
 app.use(
   cors({
     origin: (origin, callback) => {
