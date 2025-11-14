@@ -6,6 +6,8 @@ const {
   loginController,
   refreshController,
   logoutController,
+  forgotPasswordController,
+  resetPasswordController,
 } = require('./auth.controller');
 
 /**
@@ -67,5 +69,46 @@ router.post('/refresh', refreshController);
  *       - bearerAuth: []
  */
 router.post('/logout', auth(true), logoutController);
+
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request a password reset email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string }
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.post('/forgot-password', forgotPasswordController);
+
+/**
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password with token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.post('/reset-password', resetPasswordController);
 
 module.exports = router;

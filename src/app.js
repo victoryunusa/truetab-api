@@ -47,6 +47,14 @@ const shiftsRoutes = require('./modules/shifts/shifts.routes');
 const payrollRoutes = require('./modules/payroll/payroll.routes');
 const loyaltyRoutes = require('./modules/loyalty/loyalty.routes');
 const reservationRoutes = require('./modules/reservations/reservation.routes');
+const marketingRoutes = require('./modules/marketing/marketing.routes');
+const giftCardsRoutes = require('./modules/gift-cards/gift-cards.routes');
+const reviewsRoutes = require('./modules/reviews/reviews.routes');
+const kdsRoutes = require('./modules/kds/kds.routes');
+const deliveryRoutes = require('./modules/delivery/delivery.routes');
+const deliveryWebhookRoutes = require('./modules/delivery/webhook.routes');
+const settingsRoutes = require('./modules/settings/settings.routes');
+const analyticsRoutes = require('./modules/analytics/analytics.routes');
 
 //Admin routes
 const demoRoutes = require('./modules/admin/demo-requests/demo.routes');
@@ -97,6 +105,7 @@ app.use(
 
 // Webhook routes MUST come before body parsers to get raw body
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), subscriptionRoutes);
+app.use('/api/delivery/webhook', express.raw({ type: 'application/json' }), deliveryWebhookRoutes);
 
 // Now apply body parsers for all other routes
 app.use(express.json({ limit: '10mb' }));
@@ -160,6 +169,13 @@ app.use('/api/shifts', shiftsRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/marketing', marketingRoutes);
+app.use('/api/gift-cards', giftCardsRoutes);
+app.use('/api/reviews', reviewsRoutes);
+app.use('/api/kds', kdsRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use('/api/online-menu', require('./modules/online-ordering/menu.routes'));
 app.use('/api/cart', require('./modules/online-ordering/cart.routes'));

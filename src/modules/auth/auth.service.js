@@ -2,6 +2,8 @@ const { prisma } = require('../../lib/prisma');
 const bcrypt = require('bcrypt');
 const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../../utils/jwt');
 const dayjs = require('dayjs');
+const crypto = require('crypto');
+const { sendMail } = require('../../utils/email');
 
 async function register(data) {
   const {
@@ -242,9 +244,93 @@ async function issueTokens(user) {
   return { accessToken, refreshToken };
 }
 
+async function forgotPassword({ email }) {
+  // Check if user exists
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    // Don't reveal if user exists or not for security
+    return { ok: true };
+  }
+
+  // Generate secure random token
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = dayjs().add(1, 'hour').toDate();
+
+  // Store token in database
+  await prisma.passwordResetToken.create({
+    data: {
+      email,
+      token,
+      expiresAt,
+    },
+  });
+
+  // Send email with reset link
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+  
+  try {
+    await sendMail({
+      to: email,
+      subject: 'Reset Your Password',
+      text: `You requested a password reset. Click the link below to reset your password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Reset Your Password</h2>
+          <p>You requested a password reset. Click the button below to reset your password:</p>
+          <div style="margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+          </div>
+          <p>Or copy and paste this link in your browser:</p>
+          <p style="color: #666; word-break: break-all;">${resetUrl}</p>
+          <p style="margin-top: 30px; color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+          <p style="color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error('Failed to send password reset email:', err);
+    const e = new Error('Failed to send password reset email');
+    e.status = 500;
+    throw e;
+  }
+
+  return { ok: true };
+}
+
+async function resetPassword({ token, password }) {
+  // Find and validate token
+  const resetToken = await prisma.passwordResetToken.findUnique({ where: { token } });
+  
+  if (!resetToken || resetToken.isUsed || resetToken.expiresAt < new Date()) {
+    const e = new Error('Invalid or expired reset token');
+    e.status = 401;
+    throw e;
+  }
+
+  // Hash new password
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  // Update user password and mark token as used in a transaction
+  await prisma.$transaction(async tx => {
+    await tx.user.update({
+      where: { email: resetToken.email },
+      data: { password: passwordHash },
+    });
+
+    await tx.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { isUsed: true },
+    });
+  });
+
+  return { ok: true };
+}
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
+  forgotPassword,
+  resetPassword,
 };

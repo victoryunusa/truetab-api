@@ -1,84 +1,72 @@
 {
   "info": {
-    "name": "TrueTab API",
-    "description": "Complete API collection for TrueTab restaurant management system",
-    "version": "1.0.0",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "name": "Nine Tab API",
+    "description": "Complete API collection for Nine - Restaurant Management Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
   },
   "auth": {
     "type": "bearer",
     "bearer": [
       {
         "key": "token",
-        "value": "{{auth_token}}",
+        "value": "{{access_token}}",
         "type": "string"
       }
     ]
   },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Auto-refresh token if expired",
-          "if (pm.globals.get('token_expires') && Date.now() > pm.globals.get('token_expires')) {",
-          "  console.log('Token expired, attempting refresh...');",
-          "  // You can add token refresh logic here",
-          "}"
-        ]
-      }
-    }
-  ],
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:9000/api",
+      "value": "http://localhost:9000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "brand_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "branch_id",
+      "value": "",
       "type": "string"
     }
   ],
   "item": [
     {
       "name": "Health Check",
-      "item": [
-        {
-          "name": "Health Check",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
-            },
-            "description": "Check API health status including database and Redis connectivity"
-          },
-          "response": []
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health"]
         }
-      ]
+      }
     },
     {
       "name": "Authentication",
       "item": [
         {
-          "name": "Register User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const response = pm.response.json();",
-                  "  if (response.accessToken) {",
-                  "    pm.globals.set('auth_token', response.accessToken);",
-                  "  }",
-                  "}"
-                ]
-              }
-            }
-          ],
+          "name": "Register",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -88,12 +76,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"role\": \"STAFF\",\n  \"brandId\": null,\n  \"branchId\": null\n}"
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"role\": \"BRAND_OWNER\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/register",
+              "raw": "{{base_url}}/api/auth/register",
               "host": ["{{base_url}}"],
-              "path": ["auth", "register"]
+              "path": ["api", "auth", "register"]
             }
           }
         },
@@ -103,20 +91,21 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "if (pm.response.code === 200) {",
-                  "  const response = pm.response.json();",
-                  "  if (response.accessToken) {",
-                  "    pm.globals.set('auth_token', response.accessToken);",
-                  "    pm.globals.set('refresh_token', response.refreshToken);",
-                  "  }",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', response.refreshToken);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -129,31 +118,18 @@
               "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/login",
+              "raw": "{{base_url}}/api/auth/login",
               "host": ["{{base_url}}"],
-              "path": ["auth", "login"]
+              "path": ["api", "auth", "login"]
             }
           }
         },
         {
           "name": "Refresh Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const response = pm.response.json();",
-                  "  if (response.accessToken) {",
-                  "    pm.globals.set('auth_token', response.accessToken);",
-                  "  }",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -166,9 +142,9 @@
               "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/refresh",
+              "raw": "{{base_url}}/api/auth/refresh",
               "host": ["{{base_url}}"],
-              "path": ["auth", "refresh"]
+              "path": ["api", "auth", "refresh"]
             }
           }
         },
@@ -176,16 +152,35 @@
           "name": "Logout",
           "request": {
             "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Request Demo",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"company\": \"Restaurant Inc\",\n  \"phone\": \"+1234567890\"\n}"
+            },
             "url": {
-              "raw": "{{base_url}}/auth/logout",
+              "raw": "{{base_url}}/api/auth/request",
               "host": ["{{base_url}}"],
-              "path": ["auth", "logout"]
+              "path": ["api", "auth", "request"]
             }
           }
         }
@@ -198,16 +193,11 @@
           "name": "List Countries",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/countries",
+              "raw": "{{base_url}}/api/countries",
               "host": ["{{base_url}}"],
-              "path": ["countries"]
+              "path": ["api", "countries"]
             }
           }
         }
@@ -224,20 +214,16 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"My Restaurant Brand\",\n  \"description\": \"A great restaurant brand\",\n  \"website\": \"https://myrestaurant.com\",\n  \"phone\": \"+1234567890\"\n}"
+              "raw": "{\n  \"name\": \"My Restaurant Brand\",\n  \"description\": \"A great restaurant chain\",\n  \"countryId\": \"country-id\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/brands",
+              "raw": "{{base_url}}/api/brands",
               "host": ["{{base_url}}"],
-              "path": ["brands"]
+              "path": ["api", "brands"]
             }
           }
         },
@@ -245,16 +231,11 @@
           "name": "List Brands",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/brands",
+              "raw": "{{base_url}}/api/brands",
               "host": ["{{base_url}}"],
-              "path": ["brands"]
+              "path": ["api", "brands"]
             }
           }
         }
@@ -269,18 +250,77 @@
             "method": "GET",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/branches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "branches"]
+            }
+          }
+        },
+        {
+          "name": "Get Branch Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
               {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/branches",
+              "raw": "{{base_url}}/api/branches/stats",
               "host": ["{{base_url}}"],
-              "path": ["branches"]
+              "path": ["api", "branches", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Branch",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/branches/:branchId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "branches", ":branchId"],
+              "variable": [
+                {
+                  "key": "branchId",
+                  "value": "{{branch_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Branch Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/branches/:branchId/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "branches", ":branchId", "users"],
+              "variable": [
+                {
+                  "key": "branchId",
+                  "value": "{{branch_id}}"
+                }
+              ]
             }
           }
         },
@@ -294,8 +334,29 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Downtown Branch\",\n  \"address\": \"123 Main Street\",\n  \"city\": \"New York\",\n  \"phone\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/branches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "branches"]
+            }
+          }
+        },
+        {
+          "name": "Update Branch",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               },
               {
                 "key": "X-Brand-ID",
@@ -304,12 +365,41 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Downtown Branch\",\n  \"address\": \"123 Main St, Downtown\",\n  \"phone\": \"+1234567890\",\n  \"email\": \"downtown@myrestaurant.com\"\n}"
+              "raw": "{\n  \"name\": \"Updated Branch Name\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/branches",
+              "raw": "{{base_url}}/api/branches/:branchId",
               "host": ["{{base_url}}"],
-              "path": ["branches"]
+              "path": ["api", "branches", ":branchId"],
+              "variable": [
+                {
+                  "key": "branchId",
+                  "value": "{{branch_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Branch",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/branches/:branchId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "branches", ":branchId"],
+              "variable": [
+                {
+                  "key": "branchId",
+                  "value": "{{branch_id}}"
+                }
+              ]
             }
           }
         }
@@ -324,18 +414,47 @@
             "method": "GET",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/users",
+              "raw": "{{base_url}}/api/users",
               "host": ["{{base_url}}"],
-              "path": ["users"]
+              "path": ["api", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
             }
           }
         },
@@ -349,10 +468,6 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
@@ -362,9 +477,9 @@
               "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"role\": \"STAFF\",\n  \"branchId\": \"{{branch_id}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/users/invite",
+              "raw": "{{base_url}}/api/users/invite",
               "host": ["{{base_url}}"],
-              "path": ["users", "invite"]
+              "path": ["api", "users", "invite"]
             }
           }
         },
@@ -378,10 +493,6 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
@@ -391,34 +502,15 @@
               "raw": "{\n  \"role\": \"BRANCH_MANAGER\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/users/{{user_id}}/role",
+              "raw": "{{base_url}}/api/users/:userId/role",
               "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}", "role"]
-            }
-          }
-        },
-        {
-          "name": "Update Profile",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"lastName\": \"Updated Last Name\",\n  \"phone\": \"+1234567890\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/users/me",
-              "host": ["{{base_url}}"],
-              "path": ["users", "me"]
+              "path": ["api", "users", ":userId", "role"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
             }
           }
         },
@@ -428,28 +520,25 @@
             "method": "DELETE",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/users/{{user_id}}",
+              "raw": "{{base_url}}/api/users/:userId",
               "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}"]
+              "path": ["api", "users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
             }
           }
-        }
-      ]
-    },
-    {
-      "name": "Orders",
-      "item": [
+        },
         {
-          "name": "Create Order",
+          "name": "Assign User to Branch",
           "request": {
             "method": "POST",
             "header": [
@@ -458,47 +547,76 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tableNumber\": \"T-01\",\n  \"waiterId\": \"{{waiter_id}}\",\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menu_item_id}}\",\n      \"quantity\": 2,\n      \"notes\": \"No onions\"\n    }\n  ]\n}"
+              "raw": "{\n  \"userId\": \"user-id\",\n  \"branchId\": \"{{branch_id}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/orders",
+              "raw": "{{base_url}}/api/users/assign-branch",
               "host": ["{{base_url}}"],
-              "path": ["orders"]
+              "path": ["api", "users", "assign-branch"]
             }
           }
         },
         {
-          "name": "List Orders",
+          "name": "Switch Branch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"{{branch_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/switch-branch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "switch-branch"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List Customers",
           "request": {
             "method": "GET",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
               {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/orders?status=PENDING&limit=20&offset=0",
+              "raw": "{{base_url}}/api/customers?limit=20&offset=0",
               "host": ["{{base_url}}"],
-              "path": ["orders"],
+              "path": ["api", "customers"],
               "query": [
                 {
-                  "key": "status",
-                  "value": "PENDING"
+                  "key": "query",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "phone",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "email",
+                  "value": "",
+                  "disabled": true
                 },
                 {
                   "key": "limit",
@@ -513,86 +631,7 @@
           }
         },
         {
-          "name": "Get Order",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Update Order",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tableNumber\": \"T-02\",\n  \"notes\": \"Customer moved to table 2\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Update Order Status",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"PREPARING\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/status",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "status"]
-            }
-          }
-        },
-        {
-          "name": "Add Items to Order",
+          "name": "Create Customer",
           "request": {
             "method": "POST",
             "header": [
@@ -601,27 +640,69 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menu_item_id}}\",\n      \"quantity\": 1,\n      \"notes\": \"Extra spicy\"\n    }\n  ]\n}"
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"phone\": \"+1234567890\",\n  \"email\": \"jane@example.com\",\n  \"notes\": \"VIP customer\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/items",
+              "raw": "{{base_url}}/api/customers",
               "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "items"]
+              "path": ["api", "customers"]
             }
           }
         },
         {
-          "name": "Update Order Item",
+          "name": "Search Customers by Phone",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/search-by-phone?phone=+1234567890",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customers", "search-by-phone"],
+              "query": [
+                {
+                  "key": "phone",
+                  "value": "+1234567890"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Brand-ID",
+                "value": "{{brand_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
           "request": {
             "method": "PATCH",
             "header": [
@@ -630,679 +711,85 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"quantity\": 3,\n  \"notes\": \"Changed to 3 items\"\n}"
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"notes\": \"Updated notes\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/items/{{order_item_id}}",
+              "raw": "{{base_url}}/api/customers/:id",
               "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "items", "{{order_item_id}}"]
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
             }
           }
         },
         {
-          "name": "Remove Order Item",
+          "name": "Delete Customer",
           "request": {
             "method": "DELETE",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/items/{{order_item_id}}",
+              "raw": "{{base_url}}/api/customers/:id",
               "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "items", "{{order_item_id}}"]
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
             }
           }
         },
         {
-          "name": "Apply Promotion",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"promoCode\": \"DISCOUNT10\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/apply-promo",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "apply-promo"]
-            }
-          }
-        },
-        {
-          "name": "Remove Promotion",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/remove-promo",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "remove-promo"]
-            }
-          }
-        },
-        {
-          "name": "Take Payment",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"amount\": 45.50,\n  \"method\": \"CARD\",\n  \"reference\": \"TXN123456\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/payments",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "{{order_id}}", "payments"]
-            }
-          }
-        },
-        {
-          "name": "Refund Payment",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"amount\": 10.00,\n  \"reason\": \"Item was wrong\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/orders/payments/{{payment_id}}/refunds",
-              "host": ["{{base_url}}"],
-              "path": ["orders", "payments", "{{payment_id}}", "refunds"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Menu",
-      "item": [
-        {
-          "name": "Categories",
-          "item": [
-            {
-              "name": "List Categories",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/categories",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "categories"]
-                }
-              }
-            },
-            {
-              "name": "Create Category",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Appetizers\",\n  \"description\": \"Start your meal right\",\n  \"displayOrder\": 1\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/categories",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "categories"]
-                }
-              }
-            },
-            {
-              "name": "Update Category",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Starters\",\n  \"description\": \"Perfect way to begin your dining experience\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/categories/{{category_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "categories", "{{category_id}}"]
-                }
-              }
-            },
-            {
-              "name": "Delete Category",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/categories/{{category_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "categories", "{{category_id}}"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Items",
-          "item": [
-            {
-              "name": "List Items",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/items?categoryId={{category_id}}&available=true",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items"],
-                  "query": [
-                    {
-                      "key": "categoryId",
-                      "value": "{{category_id}}"
-                    },
-                    {
-                      "key": "available",
-                      "value": "true"
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Create Item",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Caesar Salad\",\n  \"description\": \"Fresh romaine lettuce with parmesan cheese\",\n  \"basePrice\": 12.99,\n  \"preparationTime\": 10,\n  \"allergens\": [\"DAIRY\", \"GLUTEN\"]\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/items",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items"]
-                }
-              }
-            },
-            {
-              "name": "Get Item",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/items/{{item_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items", "{{item_id}}"]
-                }
-              }
-            },
-            {
-              "name": "Update Item",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Classic Caesar Salad\",\n  \"basePrice\": 13.99\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/items/{{item_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items", "{{item_id}}"]
-                }
-              }
-            },
-            {
-              "name": "Delete Item",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/items/{{item_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items", "{{item_id}}"]
-                }
-              }
-            },
-            {
-              "name": "Attach Categories to Item",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"categoryIds\": [\"{{category_id_1}}\", \"{{category_id_2}}\"]\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/items/{{item_id}}/categories",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items", "{{item_id}}", "categories"]
-                }
-              }
-            },
-            {
-              "name": "Upload Item Image",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [
-                    {
-                      "key": "image",
-                      "type": "file",
-                      "src": []
-                    }
-                  ]
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/items/{{item_id}}/image",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "items", "{{item_id}}", "image"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Modifier Groups",
-          "item": [
-            {
-              "name": "List Modifier Groups",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/menu/modifier-groups",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "modifier-groups"]
-                }
-              }
-            },
-            {
-              "name": "Create Modifier Group",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Size Options\",\n  \"required\": true,\n  \"multiSelect\": false,\n  \"maxSelections\": 1\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/menu/modifier-groups",
-                  "host": ["{{base_url}}"],
-                  "path": ["menu", "modifier-groups"]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Inventory",
-      "item": [
-        {
-          "name": "Products",
-          "item": [
-            {
-              "name": "List Products",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/products",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "products"]
-                }
-              }
-            },
-            {
-              "name": "Create Product",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Organic Tomatoes\",\n  \"sku\": \"TOM-ORG-001\",\n  \"unit\": \"kg\",\n  \"unitCost\": 3.50,\n  \"supplierId\": \"{{supplier_id}}\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/products",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "products"]
-                }
-              }
-            },
-            {
-              "name": "Get Product",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/products/{{product_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "products", "{{product_id}}"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Suppliers",
-          "item": [
-            {
-              "name": "List Suppliers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/suppliers",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "suppliers"]
-                }
-              }
-            },
-            {
-              "name": "Create Supplier",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Fresh Foods Co.\",\n  \"contactName\": \"John Smith\",\n  \"email\": \"orders@freshfoods.com\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"123 Supplier St, City, State\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/suppliers",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "suppliers"]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Taxes",
-      "item": [
-        {
-          "name": "List Taxes",
+          "name": "Get Customer Order History",
           "request": {
             "method": "GET",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/taxes",
+              "raw": "{{base_url}}/api/customers/:id/orders?limit=20&offset=0",
               "host": ["{{base_url}}"],
-              "path": ["taxes"]
+              "path": ["api", "customers", ":id", "orders"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
             }
           }
         },
         {
-          "name": "Create Tax",
+          "name": "Add Customer Address",
           "request": {
             "method": "POST",
             "header": [
@@ -1311,27 +798,29 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sales Tax\",\n  \"rate\": 8.5,\n  \"type\": \"PERCENTAGE\",\n  \"isActive\": true\n}"
+              "raw": "{\n  \"label\": \"Home\",\n  \"line1\": \"123 Main Street\",\n  \"line2\": \"Apt 4B\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"postalCode\": \"10001\",\n  \"country\": \"USA\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/taxes",
+              "raw": "{{base_url}}/api/customers/:id/addresses",
               "host": ["{{base_url}}"],
-              "path": ["taxes"]
+              "path": ["api", "customers", ":id", "addresses"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
             }
           }
         },
         {
-          "name": "Update Tax",
+          "name": "Update Customer Address",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1340,128 +829,55 @@
                 "value": "application/json"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rate\": 9.0\n}"
+              "raw": "{\n  \"label\": \"Work\",\n  \"line1\": \"456 Office Blvd\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/taxes/{{tax_id}}",
+              "raw": "{{base_url}}/api/customers/:id/addresses/:addressId",
               "host": ["{{base_url}}"],
-              "path": ["taxes", "{{tax_id}}"]
+              "path": ["api", "customers", ":id", "addresses", ":addressId"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                },
+                {
+                  "key": "addressId",
+                  "value": ""
+                }
+              ]
             }
           }
         },
         {
-          "name": "Delete Tax",
+          "name": "Delete Customer Address",
           "request": {
             "method": "DELETE",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
                 "key": "X-Brand-ID",
                 "value": "{{brand_id}}"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/taxes/{{tax_id}}",
+              "raw": "{{base_url}}/api/customers/:id/addresses/:addressId",
               "host": ["{{base_url}}"],
-              "path": ["taxes", "{{tax_id}}"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Subscriptions",
-      "item": [
-        {
-          "name": "List Plans",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/subscription/plans",
-              "host": ["{{base_url}}"],
-              "path": ["subscription", "plans"]
-            },
-            "description": "Public endpoint to list all available subscription plans"
-          }
-        },
-        {
-          "name": "Subscribe Brand",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"planId\": \"{{plan_id}}\",\n  \"paymentMethod\": \"CARD\",\n  \"billingPeriod\": \"MONTHLY\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/subscription/brands/{{brand_id}}/subscribe",
-              "host": ["{{base_url}}"],
-              "path": ["subscription", "brands", "{{brand_id}}", "subscribe"]
-            }
-          }
-        },
-        {
-          "name": "Start Trial",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"planId\": \"{{plan_id}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/subscription/brands/{{brand_id}}/trial",
-              "host": ["{{base_url}}"],
-              "path": ["subscription", "brands", "{{brand_id}}", "trial"]
-            }
-          }
-        },
-        {
-          "name": "Get Brand Subscription",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/subscription/brands/{{brand_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["subscription", "brands", "{{brand_id}}"]
+              "path": ["api", "customers", ":id", "addresses", ":addressId"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                },
+                {
+                  "key": "addressId",
+                  "value": ""
+                }
+              ]
             }
           }
         }
@@ -1479,18 +895,18 @@
                 "method": "GET",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/zones",
+                  "raw": "{{base_url}}/api/floor/zones",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "zones"]
+                  "path": ["api", "floor", "zones"]
                 }
               }
             },
@@ -1504,22 +920,22 @@
                     "value": "application/json"
                   },
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Main Dining Area\",\n  \"description\": \"Primary dining section\",\n  \"color\": \"#3498db\"\n}"
+                  "raw": "{\n  \"name\": \"Main Dining\",\n  \"description\": \"Main dining area\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/floor/zones",
+                  "raw": "{{base_url}}/api/floor/zones",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "zones"]
+                  "path": ["api", "floor", "zones"]
                 }
               }
             },
@@ -1533,22 +949,28 @@
                     "value": "application/json"
                   },
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"VIP Dining Area\",\n  \"description\": \"Premium dining section\"\n}"
+                  "raw": "{\n  \"name\": \"Updated Zone Name\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/floor/zones/{{zone_id}}",
+                  "raw": "{{base_url}}/api/floor/zones/:id",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "zones", "{{zone_id}}"]
+                  "path": ["api", "floor", "zones", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
                 }
               }
             },
@@ -1558,18 +980,24 @@
                 "method": "DELETE",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/zones/{{zone_id}}",
+                  "raw": "{{base_url}}/api/floor/zones/:id",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "zones", "{{zone_id}}"]
+                  "path": ["api", "floor", "zones", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
                 }
               }
             }
@@ -1584,24 +1012,18 @@
                 "method": "GET",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/tables?zoneId={{zone_id}}",
+                  "raw": "{{base_url}}/api/floor/tables",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables"],
-                  "query": [
-                    {
-                      "key": "zoneId",
-                      "value": "{{zone_id}}"
-                    }
-                  ]
+                  "path": ["api", "floor", "tables"]
                 }
               }
             },
@@ -1615,22 +1037,22 @@
                     "value": "application/json"
                   },
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"number\": \"T-001\",\n  \"zoneId\": \"{{zone_id}}\",\n  \"capacity\": 4,\n  \"shape\": \"RECTANGLE\",\n  \"x\": 100,\n  \"y\": 200\n}"
+                  "raw": "{\n  \"number\": \"T1\",\n  \"capacity\": 4,\n  \"zoneId\": \"zone-id\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/floor/tables",
+                  "raw": "{{base_url}}/api/floor/tables",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables"]
+                  "path": ["api", "floor", "tables"]
                 }
               }
             },
@@ -1640,18 +1062,24 @@
                 "method": "GET",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/tables/{{table_id}}",
+                  "raw": "{{base_url}}/api/floor/tables/:id",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables", "{{table_id}}"]
+                  "path": ["api", "floor", "tables", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
                 }
               }
             },
@@ -1665,22 +1093,28 @@
                     "value": "application/json"
                   },
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"capacity\": 6,\n  \"x\": 150,\n  \"y\": 250\n}"
+                  "raw": "{\n  \"capacity\": 6,\n  \"status\": \"OCCUPIED\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/floor/tables/{{table_id}}",
+                  "raw": "{{base_url}}/api/floor/tables/:id",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables", "{{table_id}}"]
+                  "path": ["api", "floor", "tables", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
                 }
               }
             },
@@ -1690,18 +1124,24 @@
                 "method": "DELETE",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/tables/{{table_id}}",
+                  "raw": "{{base_url}}/api/floor/tables/:id",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables", "{{table_id}}"]
+                  "path": ["api", "floor", "tables", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
                 }
               }
             },
@@ -1711,863 +1151,253 @@
                 "method": "GET",
                 "header": [
                   {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
                     "key": "X-Brand-ID",
                     "value": "{{brand_id}}"
+                  },
+                  {
+                    "key": "X-Branch-ID",
+                    "value": "{{branch_id}}"
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/floor/tables/{{table_id}}/qrcode",
+                  "raw": "{{base_url}}/api/floor/tables/:id/qrcode",
                   "host": ["{{base_url}}"],
-                  "path": ["floor", "tables", "{{table_id}}", "qrcode"]
-                },
-                "description": "Generate QR code for table ordering"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Registers & Cash Management",
-      "item": [
-        {
-          "name": "Registers",
-          "item": [
-            {
-              "name": "List Registers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/registers",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers"]
-                }
-              }
-            },
-            {
-              "name": "Create Register",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Main Register\",\n  \"branchId\": \"{{branch_id}}\",\n  \"location\": \"Front Counter\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/registers",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers"]
-                }
-              }
-            },
-            {
-              "name": "Update Register",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Main POS Terminal\",\n  \"location\": \"Front Reception\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/registers/{{register_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "{{register_id}}"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Sessions",
-          "item": [
-            {
-              "name": "List Register Sessions",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/registers/{{register_id}}/sessions",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "{{register_id}}", "sessions"]
-                }
-              }
-            },
-            {
-              "name": "Open Register Session",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"openingAmount\": 100.00,\n  \"notes\": \"Opening shift with float\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/registers/{{register_id}}/open",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "{{register_id}}", "open"]
-                }
-              }
-            },
-            {
-              "name": "Close Register Session",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"closingAmount\": 450.75,\n  \"notes\": \"End of shift count\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/registers/{{register_id}}/close",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "{{register_id}}", "close"]
-                }
-              }
-            },
-            {
-              "name": "Get Session Details",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/registers/sessions/{{session_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "sessions", "{{session_id}}"]
-                }
-              }
-            },
-            {
-              "name": "Create Cash Movement",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"type\": \"PAYOUT\",\n  \"amount\": 20.00,\n  \"reason\": \"Petty cash for supplies\",\n  \"notes\": \"Office supplies purchase\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/registers/sessions/{{session_id}}/movements",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "sessions", "{{session_id}}", "movements"]
-                }
-              }
-            },
-            {
-              "name": "Get Session Summary",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/registers/sessions/{{session_id}}/summary",
-                  "host": ["{{base_url}}"],
-                  "path": ["registers", "sessions", "{{session_id}}", "summary"]
-                },
-                "description": "Get session financial summary with totals"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Service Charges",
-      "item": [
-        {
-          "name": "Get Service Charge Settings",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/service-charge/{{branch_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["service-charge", "{{branch_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Update Service Charge Settings",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"enabled\": true,\n  \"rate\": 12.5,\n  \"type\": \"PERCENTAGE\",\n  \"name\": \"Service Charge\",\n  \"description\": \"Mandatory service charge\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/service-charge/{{branch_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["service-charge", "{{branch_id}}"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tips Management",
-      "item": [
-        {
-          "name": "List Tips",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/tips?startDate=2024-01-01&endDate=2024-12-31",
-              "host": ["{{base_url}}"],
-              "path": ["tips"],
-              "query": [
-                {
-                  "key": "startDate",
-                  "value": "2024-01-01"
-                },
-                {
-                  "key": "endDate",
-                  "value": "2024-12-31"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Tip",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"amount\": 15.00,\n  \"staffId\": \"{{waiter_id}}\",\n  \"paymentMethod\": \"CARD\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/tips",
-              "host": ["{{base_url}}"],
-              "path": ["tips"]
-            }
-          }
-        },
-        {
-          "name": "Get Tips Summary",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/tips/summary?period=MONTHLY",
-              "host": ["{{base_url}}"],
-              "path": ["tips", "summary"],
-              "query": [
-                {
-                  "key": "period",
-                  "value": "MONTHLY"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tip Settlement",
-      "item": [
-        {
-          "name": "Create Tip Settlement",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"staffIds\": [\"{{waiter_id}}\", \"{{staff_id_2}}\"],\n  \"period\": {\n    \"from\": \"2024-01-01\",\n    \"to\": \"2024-01-31\"\n  },\n  \"notes\": \"Monthly tip settlement\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/tip-settlement",
-              "host": ["{{base_url}}"],
-              "path": ["tip-settlement"]
-            }
-          }
-        },
-        {
-          "name": "List Tip Settlements",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/tip-settlement?limit=20&offset=0",
-              "host": ["{{base_url}}"],
-              "path": ["tip-settlement"],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Recipes",
-      "item": [
-        {
-          "name": "List Recipes",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes?itemId={{item_id}}&isActive=true",
-              "host": ["{{base_url}}"],
-              "path": ["recipes"],
-              "query": [
-                {
-                  "key": "itemId",
-                  "value": "{{item_id}}"
-                },
-                {
-                  "key": "isActive",
-                  "value": "true"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Recipe",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Caesar Salad Recipe\",\n  \"itemId\": \"{{item_id}}\",\n  \"isActive\": true\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes",
-              "host": ["{{base_url}}"],
-              "path": ["recipes"]
-            }
-          }
-        },
-        {
-          "name": "Get Recipe",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Update Recipe",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Classic Caesar Salad Recipe\",\n  \"isActive\": true\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Recipe",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Duplicate Recipe",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Caesar Salad Recipe - Copy\",\n  \"itemId\": \"{{item_id}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}/duplicate",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}", "duplicate"]
-            }
-          }
-        },
-        {
-          "name": "Calculate Recipe Cost",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}/cost",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}", "cost"]
-            },
-            "description": "Calculate total cost based on current product prices"
-          }
-        },
-        {
-          "name": "List Recipe Items",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}/items",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}", "items"]
-            }
-          }
-        },
-        {
-          "name": "Add Recipe Item",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{product_id}}\",\n  \"quantity\": 0.25,\n  \"wastePct\": 5.0\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}/items",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}", "items"]
-            }
-          }
-        },
-        {
-          "name": "Batch Update Recipe Items",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{recipe_item_id}}\",\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 0.5,\n      \"wastePct\": 3.0\n    },\n    {\n      \"productId\": \"{{product_id_2}}\",\n      \"quantity\": 0.1,\n      \"wastePct\": 2.0\n    }\n  ]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes/{{recipe_id}}/items/batch",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "{{recipe_id}}", "items", "batch"]
-            }
-          }
-        },
-        {
-          "name": "Update Recipe Item",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"quantity\": 0.3,\n  \"wastePct\": 4.0\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/recipes/items/{{recipe_item_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "items", "{{recipe_item_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Recipe Item",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/recipes/items/{{recipe_item_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["recipes", "items", "{{recipe_item_id}}"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Extended Inventory",
-      "item": [
-        {
-          "name": "Stock Transactions",
-          "item": [
-            {
-              "name": "List Stock Transactions",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/stock/transactions?productId={{product_id}}&type=IN",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "stock", "transactions"],
-                  "query": [
+                  "path": ["api", "floor", "tables", ":id", "qrcode"],
+                  "variable": [
                     {
-                      "key": "productId",
-                      "value": "{{product_id}}"
-                    },
-                    {
-                      "key": "type",
-                      "value": "IN"
+                      "key": "id",
+                      "value": ""
                     }
                   ]
                 }
               }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Menu Management",
+      "item": [
+        {
+          "name": "Categories",
+          "item": [
+            {
+              "name": "List Categories",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/categories", "host": ["{{base_url}}"], "path": ["api", "menu", "categories"]}
+              }
             },
             {
-              "name": "Create Stock Transaction",
+              "name": "Create Category",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"productId\": \"{{product_id}}\",\n  \"type\": \"IN\",\n  \"quantity\": 50,\n  \"reason\": \"Stock delivery\",\n  \"reference\": \"PO-2024-001\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/stock/transactions",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "stock", "transactions"]
-                }
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Appetizers\",\n  \"description\": \"Starters\",\n  \"displayOrder\": 1\n}"},
+                "url": {"raw": "{{base_url}}/api/menu/categories", "host": ["{{base_url}}"], "path": ["api", "menu", "categories"]}
+              }
+            },
+            {
+              "name": "Update Category",
+              "request": {
+                "method": "PATCH",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Updated Category\"\n}"},
+                "url": {"raw": "{{base_url}}/api/menu/categories/:id", "host": ["{{base_url}}"], "path": ["api", "menu", "categories", ":id"], "variable": [{"key": "id", "value": ""}]}
+              }
+            },
+            {
+              "name": "Delete Category",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/categories/:id", "host": ["{{base_url}}"], "path": ["api", "menu", "categories", ":id"], "variable": [{"key": "id", "value": ""}]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Items",
+          "item": [
+            {
+              "name": "List Items",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/items", "host": ["{{base_url}}"], "path": ["api", "menu", "items"]}
+              }
+            },
+            {
+              "name": "Create Item",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Margherita Pizza\",\n  \"description\": \"Classic pizza\",\n  \"basePrice\": 12.99\n}"},
+                "url": {"raw": "{{base_url}}/api/menu/items", "host": ["{{base_url}}"], "path": ["api", "menu", "items"]}
+              }
+            },
+            {
+              "name": "Get Item",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/items/:id", "host": ["{{base_url}}"], "path": ["api", "menu", "items", ":id"], "variable": [{"key": "id", "value": ""}]}
+              }
+            },
+            {
+              "name": "Update Item",
+              "request": {
+                "method": "PATCH",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"basePrice\": 15.99\n}"},
+                "url": {"raw": "{{base_url}}/api/menu/items/:id", "host": ["{{base_url}}"], "path": ["api", "menu", "items", ":id"], "variable": [{"key": "id", "value": ""}]}
+              }
+            },
+            {
+              "name": "Delete Item",
+              "request": {
+                "method": "DELETE",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/items/:id", "host": ["{{base_url}}"], "path": ["api", "menu", "items", ":id"], "variable": [{"key": "id", "value": ""}]}
+              }
+            },
+            {
+              "name": "Upload Item Image",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "formdata", "formdata": [{"key": "image", "type": "file", "src": []}]},
+                "url": {"raw": "{{base_url}}/api/menu/items/:id/image", "host": ["{{base_url}}"], "path": ["api", "menu", "items", ":id", "image"], "variable": [{"key": "id", "value": ""}]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modifier Groups",
+          "item": [
+            {
+              "name": "List Modifier Groups",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/menu/modifier-groups", "host": ["{{base_url}}"], "path": ["api", "menu", "modifier-groups"]}
+              }
+            },
+            {
+              "name": "Create Modifier Group",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Toppings\",\n  \"minSelect\": 0,\n  \"maxSelect\": 5\n}"},
+                "url": {"raw": "{{base_url}}/api/menu/modifier-groups", "host": ["{{base_url}}"], "path": ["api", "menu", "modifier-groups"]}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tableId\": \"table-id\",\n  \"customerId\": \"customer-id\"\n}"},
+            "url": {"raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Get Order",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/orders/:id", "host": ["{{base_url}}"], "path": ["api", "orders", ":id"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}"},
+            "url": {"raw": "{{base_url}}/api/orders/:id/status", "host": ["{{base_url}}"], "path": ["api", "orders", ":id", "status"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Add Items to Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"items\": [{\"variantId\": \"variant-id\", \"quantity\": 2}]\n}"},
+            "url": {"raw": "{{base_url}}/api/orders/:id/items", "host": ["{{base_url}}"], "path": ["api", "orders", ":id", "items"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Take Payment",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"amount\": 50.00,\n  \"method\": \"CARD\"\n}"},
+            "url": {"raw": "{{base_url}}/api/orders/:id/payments", "host": ["{{base_url}}"], "path": ["api", "orders", ":id", "payments"], "variable": [{"key": "id", "value": ""}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Products",
+          "item": [
+            {
+              "name": "List Products",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/inventory/products", "host": ["{{base_url}}"], "path": ["api", "inventory", "products"]}
+              }
+            },
+            {
+              "name": "Create Product",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tomato Sauce\",\n  \"sku\": \"TOM-001\",\n  \"unit\": \"kg\"\n}"},
+                "url": {"raw": "{{base_url}}/api/inventory/products", "host": ["{{base_url}}"], "path": ["api", "inventory", "products"]}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suppliers",
+          "item": [
+            {
+              "name": "List Suppliers",
+              "request": {
+                "method": "GET",
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/inventory/suppliers", "host": ["{{base_url}}"], "path": ["api", "inventory", "suppliers"]}
+              }
+            },
+            {
+              "name": "Create Supplier",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"name\": \"Fresh Foods Co\",\n  \"contact\": \"John Doe\",\n  \"phone\": \"+1234567890\"\n}"},
+                "url": {"raw": "{{base_url}}/api/inventory/suppliers", "host": ["{{base_url}}"], "path": ["api", "inventory", "suppliers"]}
               }
             }
           ]
@@ -2579,240 +1409,17 @@
               "name": "List Purchase Orders",
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/purchase-orders?status=PENDING&supplierId={{supplier_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "purchase-orders"],
-                  "query": [
-                    {
-                      "key": "status",
-                      "value": "PENDING"
-                    },
-                    {
-                      "key": "supplierId",
-                      "value": "{{supplier_id}}"
-                    }
-                  ]
-                }
+                "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "url": {"raw": "{{base_url}}/api/inventory/purchase-orders", "host": ["{{base_url}}"], "path": ["api", "inventory", "purchase-orders"]}
               }
             },
             {
               "name": "Create Purchase Order",
               "request": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"supplierId\": \"{{supplier_id}}\",\n  \"expectedDeliveryDate\": \"2024-02-15\",\n  \"notes\": \"Weekly produce order\",\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 25,\n      \"unitCost\": 3.50\n    }\n  ]\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/purchase-orders",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "purchase-orders"]
-                }
-              }
-            },
-            {
-              "name": "Receive Purchase Order",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"receivedItems\": [\n    {\n      \"itemId\": \"{{po_item_id}}\",\n      \"receivedQuantity\": 24,\n      \"actualUnitCost\": 3.75,\n      \"notes\": \"One box damaged\"\n    }\n  ],\n  \"notes\": \"Partial delivery received\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/purchase-orders/{{po_id}}/receive",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "purchase-orders", "{{po_id}}", "receive"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Adjustments",
-          "item": [
-            {
-              "name": "List Adjustments",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/adjustments?startDate=2024-01-01",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "adjustments"],
-                  "query": [
-                    {
-                      "key": "startDate",
-                      "value": "2024-01-01"
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Create Adjustment",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Stock count discrepancy\",\n  \"notes\": \"Physical count vs system count\",\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"adjustmentQuantity\": -3,\n      \"reason\": \"Damaged goods\"\n    }\n  ]\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/adjustments",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "adjustments"]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "Transfers",
-          "item": [
-            {
-              "name": "List Transfers",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/inventory/transfers?status=PENDING",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "transfers"],
-                  "query": [
-                    {
-                      "key": "status",
-                      "value": "PENDING"
-                    }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Create Transfer",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"fromBranchId\": \"{{branch_id}}\",\n  \"toBranchId\": \"{{branch_id_2}}\",\n  \"notes\": \"Weekly stock transfer\",\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 10\n    }\n  ]\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/transfers",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "transfers"]
-                }
-              }
-            },
-            {
-              "name": "Complete Transfer",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{auth_token}}"
-                  },
-                  {
-                    "key": "X-Brand-ID",
-                    "value": "{{brand_id}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"receivedItems\": [\n    {\n      \"itemId\": \"{{transfer_item_id}}\",\n      \"receivedQuantity\": 10\n    }\n  ],\n  \"notes\": \"Transfer completed successfully\"\n}"
-                },
-                "url": {
-                  "raw": "{{base_url}}/inventory/transfers/{{transfer_id}}/complete",
-                  "host": ["{{base_url}}"],
-                  "path": ["inventory", "transfers", "{{transfer_id}}", "complete"]
-                }
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"supplierId\": \"supplier-id\",\n  \"items\": [{\"productId\": \"product-id\", \"quantity\": 10, \"unitCost\": 5.00}]\n}"},
+                "url": {"raw": "{{base_url}}/api/inventory/purchase-orders", "host": ["{{base_url}}"], "path": ["api", "inventory", "purchase-orders"]}
               }
             }
           ]
@@ -2826,176 +1433,743 @@
           "name": "List Promotions",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/promotions?active=true",
-              "host": ["{{base_url}}"],
-              "path": ["promotions"],
-              "query": [
-                {
-                  "key": "active",
-                  "value": "true"
-                }
-              ]
-            }
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+            "url": {"raw": "{{base_url}}/api/promotions", "host": ["{{base_url}}"], "path": ["api", "promotions"]}
           }
         },
         {
           "name": "Create Promotion",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Happy Hour 20% Off\",\n  \"code\": \"HAPPY20\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 20,\n  \"startDate\": \"2024-02-01T00:00:00Z\",\n  \"endDate\": \"2024-02-29T23:59:59Z\",\n  \"isActive\": true\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/promotions",
-              "host": ["{{base_url}}"],
-              "path": ["promotions"]
-            }
-          }
-        },
-        {
-          "name": "Get Promotion",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/promotions/{{promotion_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["promotions", "{{promotion_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Update Promotion",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Happy Hour 25% Off\",\n  \"value\": 25,\n  \"endDate\": \"2024-03-31T23:59:59Z\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/promotions/{{promotion_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["promotions", "{{promotion_id}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Promotion",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/promotions/{{promotion_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["promotions", "{{promotion_id}}"]
-            }
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"code\": \"SAVE20\",\n  \"name\": \"20% Off\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 20\n}"},
+            "url": {"raw": "{{base_url}}/api/promotions", "host": ["{{base_url}}"], "path": ["api", "promotions"]}
           }
         },
         {
           "name": "Toggle Promotion Status",
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              },
-              {
-                "key": "X-Brand-ID",
-                "value": "{{brand_id}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/promotions/{{promotion_id}}/toggle",
-              "host": ["{{base_url}}"],
-              "path": ["promotions", "{{promotion_id}}", "toggle"]
-            },
-            "description": "Activate or deactivate promotion"
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}],
+            "url": {"raw": "{{base_url}}/api/promotions/:id/toggle", "host": ["{{base_url}}"], "path": ["api", "promotions", ":id", "toggle"], "variable": [{"key": "id", "value": ""}]}
           }
         }
       ]
     },
     {
-      "name": "Invitations",
+      "name": "Registers & Sessions",
       "item": [
         {
-          "name": "Accept Invitation",
+          "name": "List Registers",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/registers", "host": ["{{base_url}}"], "path": ["api", "registers"]}
+          }
+        },
+        {
+          "name": "Create Register",
           "request": {
             "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Register 1\",\n  \"openingBalance\": 200.00\n}"},
+            "url": {"raw": "{{base_url}}/api/registers", "host": ["{{base_url}}"], "path": ["api", "registers"]}
+          }
+        },
+        {
+          "name": "Open Register Session",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"openingAmount\": 200.00\n}"},
+            "url": {"raw": "{{base_url}}/api/registers/:id/open", "host": ["{{base_url}}"], "path": ["api", "registers", ":id", "open"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Close Register Session",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"closingAmount\": 1500.00\n}"},
+            "url": {"raw": "{{base_url}}/api/registers/:id/close", "host": ["{{base_url}}"], "path": ["api", "registers", ":id", "close"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Get Session Summary",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/registers/sessions/:sessionId/summary", "host": ["{{base_url}}"], "path": ["api", "registers", "sessions", ":sessionId", "summary"], "variable": [{"key": "sessionId", "value": ""}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Taxes",
+      "item": [
+        {
+          "name": "List Taxes",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/taxes", "host": ["{{base_url}}"], "path": ["api", "taxes"]}
+          }
+        },
+        {
+          "name": "Create Tax",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"VAT\",\n  \"rate\": 10.0,\n  \"type\": \"PERCENTAGE\"\n}"},
+            "url": {"raw": "{{base_url}}/api/taxes", "host": ["{{base_url}}"], "path": ["api", "taxes"]}
+          }
+        },
+        {
+          "name": "Update Tax",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"rate\": 12.0\n}"},
+            "url": {"raw": "{{base_url}}/api/taxes/:id", "host": ["{{base_url}}"], "path": ["api", "taxes", ":id"], "variable": [{"key": "id", "value": ""}]}
+          }
+        },
+        {
+          "name": "Delete Tax",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/taxes/:id", "host": ["{{base_url}}"], "path": ["api", "taxes", ":id"], "variable": [{"key": "id", "value": ""}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shifts & Attendance",
+      "item": [
+        {
+          "name": "List Shift Types",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts/types", "host": ["{{base_url}}"], "path": ["api", "shifts", "types"]}
+          }
+        },
+        {
+          "name": "Create Shift Type",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Morning Shift\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"16:00\"\n}"},
+            "url": {"raw": "{{base_url}}/api/shifts/types", "host": ["{{base_url}}"], "path": ["api", "shifts", "types"]}
+          }
+        },
+        {
+          "name": "List Shifts",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts", "host": ["{{base_url}}"], "path": ["api", "shifts"]}
+          }
+        },
+        {
+          "name": "Clock In",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"shiftId\": \"shift-id\"\n}"},
+            "url": {"raw": "{{base_url}}/api/shifts/clock-in", "host": ["{{base_url}}"], "path": ["api", "shifts", "clock-in"]}
+          }
+        },
+        {
+          "name": "Clock Out",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts/clock-out", "host": ["{{base_url}}"], "path": ["api", "shifts", "clock-out"]}
+          }
+        },
+        {
+          "name": "Start Break",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts/break-start", "host": ["{{base_url}}"], "path": ["api", "shifts", "break-start"]}
+          }
+        },
+        {
+          "name": "End Break",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts/break-end", "host": ["{{base_url}}"], "path": ["api", "shifts", "break-end"]}
+          }
+        },
+        {
+          "name": "Get Current Attendance",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}],
+            "url": {"raw": "{{base_url}}/api/shifts/attendance/current", "host": ["{{base_url}}"], "path": ["api", "shifts", "attendance", "current"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loyalty Programs",
+      "item": [
+        {"name": "List Programs", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/loyalty/programs", "host": ["{{base_url}}"], "path": ["api", "loyalty", "programs"]}}},
+        {"name": "Create Program", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"VIP Rewards\",\n  \"pointsPerCurrency\": 1\n}"}, "url": {"raw": "{{base_url}}/api/loyalty/programs", "host": ["{{base_url}}"], "path": ["api", "loyalty", "programs"]}}},
+        {"name": "Enroll Customer", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"programId\": \"program-id\",\n  \"customerId\": \"customer-id\"\n}"}, "url": {"raw": "{{base_url}}/api/loyalty/enroll", "host": ["{{base_url}}"], "path": ["api", "loyalty", "enroll"]}}},
+        {"name": "Get Customer Loyalty", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/loyalty/customers/:customerId", "host": ["{{base_url}}"], "path": ["api", "loyalty", "customers", ":customerId"], "variable": [{"key": "customerId", "value": ""}]}}},
+        {"name": "Earn Points", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"customer-id\",\n  \"points\": 100\n}"}, "url": {"raw": "{{base_url}}/api/loyalty/programs/:id/earn", "host": ["{{base_url}}"], "path": ["api", "loyalty", "programs", ":id", "earn"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Redeem Points", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"customer-id\",\n  \"points\": 50\n}"}, "url": {"raw": "{{base_url}}/api/loyalty/programs/:id/redeem", "host": ["{{base_url}}"], "path": ["api", "loyalty", "programs", ":id", "redeem"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {"name": "List Reservations", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/reservations", "host": ["{{base_url}}"], "path": ["api", "reservations"]}}},
+        {"name": "Create Reservation", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"customerId\": \"customer-id\",\n  \"partySize\": 4,\n  \"date\": \"2024-01-20\",\n  \"time\": \"19:00\"\n}"}, "url": {"raw": "{{base_url}}/api/reservations", "host": ["{{base_url}}"], "path": ["api", "reservations"]}}},
+        {"name": "Check Availability", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/reservations/availability?date=2024-01-20&time=19:00&partySize=4", "host": ["{{base_url}}"], "path": ["api", "reservations", "availability"], "query": [{"key": "date", "value": "2024-01-20"}, {"key": "time", "value": "19:00"}, {"key": "partySize", "value": "4"}]}}},
+        {"name": "Get Today's Reservations", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/reservations/today", "host": ["{{base_url}}"], "path": ["api", "reservations", "today"]}}},
+        {"name": "Cancel Reservation", "request": {"method": "POST", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/reservations/:id/cancel", "host": ["{{base_url}}"], "path": ["api", "reservations", ":id", "cancel"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Gift Cards",
+      "item": [
+        {"name": "Purchase Gift Card", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"amount\": 100.00,\n  \"recipientEmail\": \"recipient@example.com\"\n}"}, "url": {"raw": "{{base_url}}/api/gift-cards", "host": ["{{base_url}}"], "path": ["api", "gift-cards"]}}},
+        {"name": "List Gift Cards", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/gift-cards", "host": ["{{base_url}}"], "path": ["api", "gift-cards"]}}},
+        {"name": "Check Gift Card Balance", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/gift-cards/:code/balance", "host": ["{{base_url}}"], "path": ["api", "gift-cards", ":code", "balance"], "variable": [{"key": "code", "value": ""}]}}},
+        {"name": "Redeem Gift Card", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"code\": \"GIFT-CODE-123\",\n  \"amount\": 25.00\n}"}, "url": {"raw": "{{base_url}}/api/gift-cards/redeem", "host": ["{{base_url}}"], "path": ["api", "gift-cards", "redeem"]}}}
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {"name": "List Plans", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/subscription/plans", "host": ["{{base_url}}"], "path": ["api", "subscription", "plans"]}}},
+        {"name": "Subscribe Brand", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"planId\": \"plan-id\"\n}"}, "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId/subscribe", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId", "subscribe"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Start Trial", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"planId\": \"plan-id\"\n}"}, "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId/trial", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId", "trial"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Get Brand Subscription", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Create Checkout Session", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"planId\": \"plan-id\",\n  \"successUrl\": \"https://example.com/success\"\n}"}, "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId/checkout", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId", "checkout"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Cancel Subscription", "request": {"method": "POST", "header": [], "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId/cancel", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId", "cancel"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Get Brand Invoices", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/subscription/brands/:brandId/invoices", "host": ["{{base_url}}"], "path": ["api", "subscription", "brands", ":brandId", "invoices"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}}
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {"name": "Get Wallet Summary", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/summary", "host": ["{{base_url}}"], "path": ["api", "wallet", "summary"]}}},
+        {"name": "Get Wallet Transactions", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/transactions", "host": ["{{base_url}}"], "path": ["api", "wallet", "transactions"]}}},
+        {"name": "Request Payout", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"amount\": 500.00,\n  \"bankAccountId\": \"bank-account-id\"\n}"}, "url": {"raw": "{{base_url}}/api/wallet/payout/request", "host": ["{{base_url}}"], "path": ["api", "wallet", "payout", "request"]}}},
+        {"name": "Get Payouts", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/payouts", "host": ["{{base_url}}"], "path": ["api", "wallet", "payouts"]}}}
+      ]
+    },
+    {
+      "name": "Online Ordering",
+      "item": [
+        {"name": "Get Public Menu", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/online-menu/public/:urlSlug", "host": ["{{base_url}}"], "path": ["api", "online-menu", "public", ":urlSlug"], "variable": [{"key": "urlSlug", "value": ""}]}}},
+        {"name": "Create Online Menu", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Online Menu\",\n  \"urlSlug\": \"my-restaurant\"\n}"}, "url": {"raw": "{{base_url}}/api/online-menu/create", "host": ["{{base_url}}"], "path": ["api", "online-menu", "create"]}}},
+        {"name": "Get Brand Online Menu", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/online-menu/:brandId", "host": ["{{base_url}}"], "path": ["api", "online-menu", ":brandId"], "variable": [{"key": "brandId", "value": "{{brand_id}}"}]}}},
+        {"name": "Update Menu Settings", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"isActive\": true\n}"}, "url": {"raw": "{{base_url}}/api/online-menu/:menuId/settings", "host": ["{{base_url}}"], "path": ["api", "online-menu", ":menuId", "settings"], "variable": [{"key": "menuId", "value": ""}]}}},
+        {"name": "Toggle Menu Status", "request": {"method": "PATCH", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/online-menu/:menuId/toggle", "host": ["{{base_url}}"], "path": ["api", "online-menu", ":menuId", "toggle"], "variable": [{"key": "menuId", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {"name": "List Reviews", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/reviews", "host": ["{{base_url}}"], "path": ["api", "reviews"]}}},
+        {"name": "Create Review", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"orderId\": \"order-id\",\n  \"rating\": 5,\n  \"comment\": \"Great food!\"\n}"}, "url": {"raw": "{{base_url}}/api/reviews", "host": ["{{base_url}}"], "path": ["api", "reviews"]}}},
+        {"name": "Get Review Stats", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/reviews/stats", "host": ["{{base_url}}"], "path": ["api", "reviews", "stats"]}}},
+        {"name": "Get Order Reviews", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/reviews/order/:orderId", "host": ["{{base_url}}"], "path": ["api", "reviews", "order", ":orderId"], "variable": [{"key": "orderId", "value": ""}]}}},
+        {"name": "Respond to Review", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"response\": \"Thank you for your feedback!\"\n}"}, "url": {"raw": "{{base_url}}/api/reviews/:id/response", "host": ["{{base_url}}"], "path": ["api", "reviews", ":id", "response"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Moderate Review", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"status\": \"APPROVED\"\n}"}, "url": {"raw": "{{base_url}}/api/reviews/:id/moderate", "host": ["{{base_url}}"], "path": ["api", "reviews", ":id", "moderate"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Delivery",
+      "item": [
+        {"name": "List Providers", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/delivery/providers", "host": ["{{base_url}}"], "path": ["api", "delivery", "providers"]}}},
+        {"name": "Create Integration", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"providerId\": \"provider-id\",\n  \"credentials\": {}\n}"}, "url": {"raw": "{{base_url}}/api/delivery/integrations", "host": ["{{base_url}}"], "path": ["api", "delivery", "integrations"]}}},
+        {"name": "List Integrations", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/delivery/integrations", "host": ["{{base_url}}"], "path": ["api", "delivery", "integrations"]}}},
+        {"name": "List Delivery Orders", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/delivery/orders", "host": ["{{base_url}}"], "path": ["api", "delivery", "orders"]}}},
+        {"name": "Get Delivery Metrics", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/delivery/metrics", "host": ["{{base_url}}"], "path": ["api", "delivery", "metrics"]}}}
+      ]
+    },
+    {
+      "name": "KDS (Kitchen Display)",
+      "item": [
+        {"name": "List Tickets", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets"]}}},
+        {"name": "Get Ticket", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets/:id", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Accept Ticket", "request": {"method": "PATCH", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets/:id/accept", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets", ":id", "accept"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Start Ticket", "request": {"method": "PATCH", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets/:id/start", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets", ":id", "start"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Mark Ready", "request": {"method": "PATCH", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets/:id/ready", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets", ":id", "ready"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Bump Ticket", "request": {"method": "PATCH", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/tickets/:id/bump", "host": ["{{base_url}}"], "path": ["api", "kds", "tickets", ":id", "bump"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Get Branch Metrics", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/kds/metrics/branch", "host": ["{{base_url}}"], "path": ["api", "kds", "metrics", "branch"]}}}
+      ]
+    },
+    {
+      "name": "Marketing",
+      "item": [
+        {"name": "List Campaigns", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/marketing/campaigns", "host": ["{{base_url}}"], "path": ["api", "marketing", "campaigns"]}}},
+        {"name": "Create Campaign", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Summer Sale\",\n  \"type\": \"EMAIL\"\n}"}, "url": {"raw": "{{base_url}}/api/marketing/campaigns", "host": ["{{base_url}}"], "path": ["api", "marketing", "campaigns"]}}},
+        {"name": "Get Campaign", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/marketing/campaigns/:id", "host": ["{{base_url}}"], "path": ["api", "marketing", "campaigns", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Get Campaign Analytics", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/marketing/campaigns/:id/analytics", "host": ["{{base_url}}"], "path": ["api", "marketing", "campaigns", ":id", "analytics"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "AI Features",
+      "item": [
+        {"name": "Get Recommendations", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/recommendations?customerId=customer-id&limit=5", "host": ["{{base_url}}"], "path": ["api", "ai", "recommendations"], "query": [{"key": "customerId", "value": "customer-id"}, {"key": "limit", "value": "5"}]}}},
+        {"name": "Get Similar Items", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/recommendations/similar/:itemId", "host": ["{{base_url}}"], "path": ["api", "ai", "recommendations", "similar", ":itemId"], "variable": [{"key": "itemId", "value": ""}]}}},
+        {"name": "Forecast Demand", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/forecast/demand", "host": ["{{base_url}}"], "path": ["api", "ai", "forecast", "demand"]}}},
+        {"name": "Forecast Inventory", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/forecast/inventory?daysAhead=7", "host": ["{{base_url}}"], "path": ["api", "ai", "forecast", "inventory"], "query": [{"key": "daysAhead", "value": "7"}]}}},
+        {"name": "Parse Order (NLP)", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"2 margherita pizzas and a coke\"\n}"}, "url": {"raw": "{{base_url}}/api/ai/nlp/parse-order", "host": ["{{base_url}}"], "path": ["api", "ai", "nlp", "parse-order"]}}},
+        {"name": "Search Menu (NLP)", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/nlp/search?query=something spicy with chicken", "host": ["{{base_url}}"], "path": ["api", "ai", "nlp", "search"], "query": [{"key": "query", "value": "something spicy with chicken"}]}}},
+        {"name": "Get Pricing Suggestions", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/pricing/suggestions", "host": ["{{base_url}}"], "path": ["api", "ai", "pricing", "suggestions"]}}},
+        {"name": "Chat with Bot", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"message\": \"How do I close a register session?\"\n}"}, "url": {"raw": "{{base_url}}/api/ai/chat", "host": ["{{base_url}}"], "path": ["api", "ai", "chat"]}}},
+        {"name": "Get Business Insights", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/analytics/insights?days=30", "host": ["{{base_url}}"], "path": ["api", "ai", "analytics", "insights"], "query": [{"key": "days", "value": "30"}]}}},
+        {"name": "Analyze Customer Behavior", "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/ai/analytics/customer-behavior", "host": ["{{base_url}}"], "path": ["api", "ai", "analytics", "customer-behavior"]}}}
+      ]
+    },
+    {
+      "name": "Payroll",
+      "item": [
+        {"name": "List Employee Profiles", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/payroll/employees", "host": ["{{base_url}}"], "path": ["api", "payroll", "employees"]}}},
+        {"name": "Create Employee Profile", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"user-id\",\n  \"hourlyRate\": 15.00\n}"}, "url": {"raw": "{{base_url}}/api/payroll/employees", "host": ["{{base_url}}"], "path": ["api", "payroll", "employees"]}}},
+        {"name": "List Payroll Periods", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/payroll/periods", "host": ["{{base_url}}"], "path": ["api", "payroll", "periods"]}}},
+        {"name": "Create Payroll Period", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-01-15\"\n}"}, "url": {"raw": "{{base_url}}/api/payroll/periods", "host": ["{{base_url}}"], "path": ["api", "payroll", "periods"]}}},
+        {"name": "Generate Payrolls", "request": {"method": "POST", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/payroll/periods/:id/generate", "host": ["{{base_url}}"], "path": ["api", "payroll", "periods", ":id", "generate"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Tips",
+      "item": [
+        {"name": "List Tips", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/tips", "host": ["{{base_url}}"], "path": ["api", "tips"]}}},
+        {"name": "Create Tip", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"orderId\": \"order-id\",\n  \"amount\": 10.00\n}"}, "url": {"raw": "{{base_url}}/api/tips", "host": ["{{base_url}}"], "path": ["api", "tips"]}}},
+        {"name": "Get Tips Summary", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/tips/summary", "host": ["{{base_url}}"], "path": ["api", "tips", "summary"]}}}
+      ]
+    },
+    {
+      "name": "Tip Settlement",
+      "item": [
+        {"name": "Settle Tips", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"userId\": \"user-id\",\n  \"tipIds\": []\n}"}, "url": {"raw": "{{base_url}}/api/tip-settlement", "host": ["{{base_url}}"], "path": ["api", "tip-settlement"]}}},
+        {"name": "List Settlements", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/tip-settlement", "host": ["{{base_url}}"], "path": ["api", "tip-settlement"]}}}
+      ]
+    },
+    {
+      "name": "Service Charge",
+      "item": [
+        {"name": "Get Service Charge", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "url": {"raw": "{{base_url}}/api/service-charge/:branchId", "host": ["{{base_url}}"], "path": ["api", "service-charge", ":branchId"], "variable": [{"key": "branchId", "value": "{{branch_id}}"}]}}},
+        {"name": "Upsert Service Charge", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}, {"key": "X-Branch-ID", "value": "{{branch_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"rate\": 10.0,\n  \"type\": \"PERCENTAGE\"\n}"}, "url": {"raw": "{{base_url}}/api/service-charge/:branchId", "host": ["{{base_url}}"], "path": ["api", "service-charge", ":branchId"], "variable": [{"key": "branchId", "value": "{{branch_id}}"}]}}}
+      ]
+    },
+    {
+      "name": "Recipes",
+      "item": [
+        {"name": "List Recipes", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/recipes", "host": ["{{base_url}}"], "path": ["api", "recipes"]}}},
+        {"name": "Create Recipe", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pizza Recipe\",\n  \"itemId\": \"item-id\"\n}"}, "url": {"raw": "{{base_url}}/api/recipes", "host": ["{{base_url}}"], "path": ["api", "recipes"]}}},
+        {"name": "Get Recipe", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/recipes/:id", "host": ["{{base_url}}"], "path": ["api", "recipes", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Update Recipe", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Updated Recipe\"\n}"}, "url": {"raw": "{{base_url}}/api/recipes/:id", "host": ["{{base_url}}"], "path": ["api", "recipes", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Delete Recipe", "request": {"method": "DELETE", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/recipes/:id", "host": ["{{base_url}}"], "path": ["api", "recipes", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Calculate Recipe Cost", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/recipes/:id/cost", "host": ["{{base_url}}"], "path": ["api", "recipes", ":id", "cost"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Add Recipe Item", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"productId\": \"product-id\",\n  \"quantity\": 2.5\n}"}, "url": {"raw": "{{base_url}}/api/recipes/:recipeId/items", "host": ["{{base_url}}"], "path": ["api", "recipes", ":recipeId", "items"], "variable": [{"key": "recipeId", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Online Ordering - Cart",
+      "item": [
+        {"name": "Get Cart", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/cart/:sessionId", "host": ["{{base_url}}"], "path": ["api", "cart", ":sessionId"], "variable": [{"key": "sessionId", "value": ""}]}}},
+        {"name": "Add Item to Cart", "request": {"auth": {"type": "noauth"}, "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"sessionId\": \"session-id\",\n  \"itemId\": \"item-id\",\n  \"quantity\": 2\n}"}, "url": {"raw": "{{base_url}}/api/cart/add", "host": ["{{base_url}}"], "path": ["api", "cart", "add"]}}},
+        {"name": "Update Cart Item", "request": {"auth": {"type": "noauth"}, "method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"quantity\": 3\n}"}, "url": {"raw": "{{base_url}}/api/cart/item/:itemId", "host": ["{{base_url}}"], "path": ["api", "cart", "item", ":itemId"], "variable": [{"key": "itemId", "value": ""}]}}},
+        {"name": "Remove Cart Item", "request": {"auth": {"type": "noauth"}, "method": "DELETE", "header": [], "url": {"raw": "{{base_url}}/api/cart/item/:itemId", "host": ["{{base_url}}"], "path": ["api", "cart", "item", ":itemId"], "variable": [{"key": "itemId", "value": ""}]}}},
+        {"name": "Clear Cart", "request": {"auth": {"type": "noauth"}, "method": "DELETE", "header": [], "url": {"raw": "{{base_url}}/api/cart/:cartId/clear", "host": ["{{base_url}}"], "path": ["api", "cart", ":cartId", "clear"], "variable": [{"key": "cartId", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Online Ordering - Checkout",
+      "item": [
+        {"name": "Create Order", "request": {"auth": {"type": "noauth"}, "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"cartId\": \"cart-id\",\n  \"customerInfo\": {},\n  \"deliveryAddress\": {}\n}"}, "url": {"raw": "{{base_url}}/api/checkout/create-order", "host": ["{{base_url}}"], "path": ["api", "checkout", "create-order"]}}},
+        {"name": "Create Payment Intent", "request": {"auth": {"type": "noauth"}, "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{}"}, "url": {"raw": "{{base_url}}/api/checkout/payment-intent/:orderId", "host": ["{{base_url}}"], "path": ["api", "checkout", "payment-intent", ":orderId"], "variable": [{"key": "orderId", "value": ""}]}}},
+        {"name": "Get Order by Number", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/checkout/order/:orderNumber", "host": ["{{base_url}}"], "path": ["api", "checkout", "order", ":orderNumber"], "variable": [{"key": "orderNumber", "value": ""}]}}},
+        {"name": "Get Order by ID", "request": {"auth": {"type": "noauth"}, "method": "GET", "header": [], "url": {"raw": "{{base_url}}/api/checkout/order/id/:orderId", "host": ["{{base_url}}"], "path": ["api", "checkout", "order", "id", ":orderId"], "variable": [{"key": "orderId", "value": ""}]}}},
+        {"name": "List Orders (Admin)", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/checkout/orders", "host": ["{{base_url}}"], "path": ["api", "checkout", "orders"]}}},
+        {"name": "Update Order Status", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"status\": \"PREPARING\"\n}"}, "url": {"raw": "{{base_url}}/api/checkout/order/:orderId/status", "host": ["{{base_url}}"], "path": ["api", "checkout", "order", ":orderId", "status"], "variable": [{"key": "orderId", "value": ""}]}}},
+        {"name": "Process Refund", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"amount\": 50.00\n}"}, "url": {"raw": "{{base_url}}/api/checkout/order/:orderId/refund", "host": ["{{base_url}}"], "path": ["api", "checkout", "order", ":orderId", "refund"], "variable": [{"key": "orderId", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Bank Accounts",
+      "item": [
+        {"name": "List Bank Accounts", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/bank-accounts", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts"]}}},
+        {"name": "Create Bank Account", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"accountName\": \"Business Account\",\n  \"accountNumber\": \"1234567890\",\n  \"bankName\": \"Bank of America\"\n}"}, "url": {"raw": "{{base_url}}/api/wallet/bank-accounts", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts"]}}},
+        {"name": "Get Bank Account", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/bank-accounts/:id", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Update Bank Account", "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"accountName\": \"Updated Account\"\n}"}, "url": {"raw": "{{base_url}}/api/wallet/bank-accounts/:id", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Delete Bank Account", "request": {"method": "DELETE", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/bank-accounts/:id", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts", ":id"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Set Default Bank Account", "request": {"method": "POST", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/bank-accounts/:id/set-default", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts", ":id", "set-default"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "Verify Bank Account", "request": {"method": "POST", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/wallet/bank-accounts/:id/verify", "host": ["{{base_url}}"], "path": ["api", "wallet", "bank-accounts", ":id", "verify"], "variable": [{"key": "id", "value": ""}]}}}
+      ]
+    },
+    {
+      "name": "Inventory - Adjustments",
+      "item": [
+        {"name": "Create Adjustment", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"productId\": \"product-id\",\n  \"quantity\": 10,\n  \"reason\": \"Damaged\"\n}"}, "url": {"raw": "{{base_url}}/api/inventory/adjustments", "host": ["{{base_url}}"], "path": ["api", "inventory", "adjustments"]}}},
+        {"name": "List Adjustments", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/inventory/adjustments", "host": ["{{base_url}}"], "path": ["api", "inventory", "adjustments"]}}}
+      ]
+    },
+    {
+      "name": "Inventory - Transfers",
+      "item": [
+        {"name": "Create Transfer", "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Brand-ID", "value": "{{brand_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"fromBranchId\": \"branch-id-1\",\n  \"toBranchId\": \"branch-id-2\",\n  \"items\": []\n}"}, "url": {"raw": "{{base_url}}/api/inventory/transfers", "host": ["{{base_url}}"], "path": ["api", "inventory", "transfers"]}}},
+        {"name": "Complete Transfer", "request": {"method": "POST", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/inventory/transfers/:id/complete", "host": ["{{base_url}}"], "path": ["api", "inventory", "transfers", ":id", "complete"], "variable": [{"key": "id", "value": ""}]}}},
+        {"name": "List Transfers", "request": {"method": "GET", "header": [{"key": "X-Brand-ID", "value": "{{brand_id}}"}], "url": {"raw": "{{base_url}}/api/inventory/transfers", "host": ["{{base_url}}"], "path": ["api", "inventory", "transfers"]}}}
+      ]
+    },
+    {
+      "name": "Invites",
+      "item": [
+        {"name": "Accept Invite", "request": {"auth": {"type": "noauth"}, "method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"token\": \"invite-token\",\n  \"password\": \"password123\"\n}"}, "url": {"raw": "{{base_url}}/api/invite/accept", "host": ["{{base_url}}"], "path": ["api", "invite", "accept"]}}}
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"{{invitation_token}}\",\n  \"password\": \"newpassword123\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}"
+              "raw": "{\n  \"businessName\": \"My Restaurant\",\n  \"businessHours\": {\n    \"monday\": {\"open\": \"09:00\", \"close\": \"22:00\", \"closed\": false}\n  },\n  \"timezone\": \"America/New_York\",\n  \"currency\": \"USD\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/invite/accept",
+              "raw": "{{base_url}}/api/settings",
               "host": ["{{base_url}}"],
-              "path": ["invite", "accept"]
+              "path": ["api", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Reset Settings to Defaults",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settings/reset",
+              "host": ["{{base_url}}"],
+              "path": ["api", "settings", "reset"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/dashboard?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "dashboard"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sales Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/sales-overview?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "sales-overview"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/revenue-trends?startDate=2024-01-01&endDate=2024-12-31&interval=day",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "revenue-trends"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"},
+                {"key": "interval", "value": "day", "description": "Options: hour, day, week, month"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Top Selling Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/top-items?startDate=2024-01-01&endDate=2024-12-31&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "top-items"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/customer-insights?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "customer-insights"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"},
+              {"key": "X-Branch-ID", "value": "{{branch_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/order-statistics?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "order-statistics"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-12-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery Integration",
+      "item": [
+        {
+          "name": "List Delivery Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/delivery/providers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "providers"]
+            }
+          }
+        },
+        {
+          "name": "Get Integration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/delivery/integration/:providerId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "integration", ":providerId"],
+              "variable": [{"key": "providerId", "value": ""}]
+            }
+          }
+        },
+        {
+          "name": "Create/Update Integration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"provider-id\",\n  \"isEnabled\": true,\n  \"credentials\": {\n    \"apiKey\": \"your-api-key\"\n  }\n}"
             },
-            "description": "Public endpoint for accepting user invitations"
+            "url": {
+              "raw": "{{base_url}}/api/delivery/integration",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "integration"]
+            }
+          }
+        },
+        {
+          "name": "List Delivery Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/delivery/orders?status=PENDING",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "orders"],
+              "query": [
+                {"key": "status", "value": "PENDING"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Delivery Order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/delivery/orders/:orderId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "orders", ":orderId"],
+              "variable": [{"key": "orderId", "value": ""}]
+            }
+          }
+        },
+        {
+          "name": "Update Delivery Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Brand-ID", "value": "{{brand_id}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARING\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/delivery/orders/:orderId/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "delivery", "orders", ":orderId", "status"],
+              "variable": [{"key": "orderId", "value": ""}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Demo Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/demo-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "demo-requests"]
+            }
+          }
+        },
+        {
+          "name": "Get Demo Request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/demo-requests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "demo-requests", ":id"],
+              "variable": [{"key": "id", "value": ""}]
+            }
+          }
+        },
+        {
+          "name": "Update Demo Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONTACTED\",\n  \"notes\": \"Called and scheduled demo\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/demo-requests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "demo-requests", ":id"],
+              "variable": [{"key": "id", "value": ""}]
+            }
+          }
+        },
+        {
+          "name": "Delete Demo Request",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/demo-requests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "demo-requests", ":id"],
+              "variable": [{"key": "id", "value": ""}]
+            }
           }
         }
       ]

@@ -109,6 +109,11 @@ model Brand {
   EmployeeProfile     EmployeeProfile[]
   loyaltyPrograms     LoyaltyProgram[]
   onlineMenus         OnlineMenu[]
+  campaigns           Campaign[]
+  reviews             Review[]
+  giftCards           GiftCard[]
+  storeCredits        StoreCredit[]
+  deliveryIntegrations DeliveryIntegration[]
 
   @@unique([ownerId, name])
   @@map("brands")
@@ -869,6 +874,10 @@ model Customer {
   loyaltyAccount      CustomerLoyalty?
   loyaltyTransactions LoyaltyTransaction[]
   carts               Cart[]
+  campaignAudiences   CampaignAudience[]
+  campaignEngagements CampaignEngagement[]
+  reviews             Review[]
+  storeCredits        StoreCredit[]
 
   @@index([brandId])
   @@index([phone])
@@ -947,6 +956,10 @@ model Order {
   PromoRedemption     PromoRedemption[]
   Tip                 Tip[]
   walletTransactions  WalletTransaction[]
+  reviews             Review[]
+  giftCardTransactions GiftCardTransaction[]
+  storeCreditTransactions StoreCreditTransaction[]
+  deliveryOrder       DeliveryOrder?
 
   @@index([brandId])
   @@index([branchId])
@@ -1103,24 +1116,35 @@ model VariantRoute {
 }
 
 model KitchenTicket {
-  id        String              @id @default(uuid())
-  brandId   String
-  branchId  String
-  orderId   String
-  stationId String
-  status    KitchenTicketStatus @default(NEW)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  items     KitchenTicketItem[]
-  branch    Branch              @relation(fields: [branchId], references: [id])
-  brand     Brand               @relation(fields: [brandId], references: [id])
-  order     Order               @relation(fields: [orderId], references: [id])
-  station   KitchenStation      @relation(fields: [stationId], references: [id])
+  id              String              @id @default(uuid())
+  brandId         String
+  branchId        String
+  orderId         String
+  stationId       String
+  status          KitchenTicketStatus @default(NEW)
+  priority        Int                 @default(0) // Higher number = higher priority
+  estimatedTime   Int?                // Estimated prep time in minutes
+  acceptedAt      DateTime?           // When kitchen accepted the ticket
+  startedAt       DateTime?           // When prep started
+  readyAt         DateTime?           // When item was ready
+  servedAt        DateTime?           // When item was served
+  bumpedAt        DateTime?           // When ticket was bumped/cleared
+  actualPrepTime  Int?                // Actual time taken (in minutes)
+  delayReason     String?             // If delayed, reason
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  items           KitchenTicketItem[]
+  branch          Branch              @relation(fields: [branchId], references: [id])
+  brand           Brand               @relation(fields: [brandId], references: [id])
+  order           Order               @relation(fields: [orderId], references: [id])
+  station         KitchenStation      @relation(fields: [stationId], references: [id])
 
   @@index([brandId])
   @@index([branchId])
   @@index([orderId])
   @@index([stationId])
+  @@index([status])
+  @@index([priority])
   @@map("kitchen_tickets")
 }
 
@@ -1339,6 +1363,18 @@ model RegistrationCode {
   demoRequest   DemoRequest? @relation(fields: [demoRequestId], references: [id])
 
   @@map("registration_codes")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("password_reset_tokens")
 }
 
 model EmployeeProfile {
@@ -2061,4 +2097,463 @@ enum PayoutMethod {
   BANK_TRANSFER
   STRIPE_CONNECT
   MANUAL
+}
+
+// ============================================
+// Marketing Campaign Models
+// ============================================
+
+model Campaign {
+  id             String              @id @default(uuid())
+  brandId        String
+  name           String
+  description    String?
+  type           CampaignType
+  status         CampaignStatus      @default(DRAFT)
+  channel        CampaignChannel
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Decimal?            @db.Decimal(12, 2)
+  targetAudience Json? // Flexible targeting criteria
+  content        Json // Campaign content (email, sms, push notification content)
+  imageUrl       String?
+  callToAction   String?
+  link           String?
+  promoCode      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  brand          Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  metrics        CampaignMetrics?
+  audiences      CampaignAudience[]
+  engagements    CampaignEngagement[]
+
+  @@index([brandId])
+  @@index([status])
+  @@index([type])
+  @@index([startDate])
+  @@map("campaigns")
+}
+
+model CampaignAudience {
+  id            String   @id @default(uuid())
+  campaignId    String
+  customerId    String?
+  email         String?
+  phone         String?
+  segmentCriteria Json? // How they were selected
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  convertedAt   DateTime?
+  unsubscribedAt DateTime?
+  createdAt     DateTime @default(now())
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([email])
+  @@map("campaign_audiences")
+}
+
+model CampaignMetrics {
+  id              String   @id @default(uuid())
+  campaignId      String   @unique
+  totalSent       Int      @default(0)
+  totalDelivered  Int      @default(0)
+  totalOpened     Int      @default(0)
+  totalClicked    Int      @default(0)
+  totalConverted  Int      @default(0)
+  totalUnsubscribed Int    @default(0)
+  totalRevenue    Decimal  @default(0) @db.Decimal(12, 2)
+  uniqueOpens     Int      @default(0)
+  uniqueClicks    Int      @default(0)
+  bounceRate      Decimal? @db.Decimal(5, 2)
+  conversionRate  Decimal? @db.Decimal(5, 2)
+  roi             Decimal? @db.Decimal(10, 2) // Return on Investment
+  updatedAt       DateTime @updatedAt
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("campaign_metrics")
+}
+
+model CampaignEngagement {
+  id         String             @id @default(uuid())
+  campaignId String
+  customerId String?
+  email      String?
+  eventType  CampaignEventType
+  eventData  Json? // Additional event information
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime           @default(now())
+  campaign   Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer   Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("campaign_engagements")
+}
+
+enum CampaignType {
+  PROMOTIONAL // Discount, special offer
+  ANNOUNCEMENT // New menu item, event
+  LOYALTY_REWARD // Loyalty program promotions
+  SEASONAL // Holiday, seasonal campaigns
+  BRAND_AWARENESS // General brand promotion
+  RE_ENGAGEMENT // Win back inactive customers
+  PRODUCT_LAUNCH // New product introduction
+  FEEDBACK // Request reviews or feedback
+}
+
+enum CampaignStatus {
+  DRAFT // Being created
+  SCHEDULED // Scheduled to run
+  ACTIVE // Currently running
+  PAUSED // Temporarily paused
+  COMPLETED // Finished running
+  CANCELLED // Cancelled before completion
+}
+
+enum CampaignChannel {
+  EMAIL // Email marketing
+  SMS // Text message
+  PUSH // Push notification
+  IN_APP // In-app message
+  SOCIAL_MEDIA // Social media post
+  QR_CODE // QR code campaign
+  WEBSITE_BANNER // Website banner
+}
+
+enum CampaignEventType {
+  SENT // Campaign sent
+  DELIVERED // Successfully delivered
+  OPENED // Email/message opened
+  CLICKED // Link clicked
+  CONVERTED // Made a purchase
+  BOUNCED // Delivery failed
+  UNSUBSCRIBED // Unsubscribed from list
+  COMPLAINT // Marked as spam
+}
+
+// ============================================
+// Reviews & Ratings System
+// ============================================
+
+model Review {
+  id          String          @id @default(uuid())
+  brandId     String
+  customerId  String
+  orderId     String?
+  rating      Int // 1-5 stars
+  title       String?
+  comment     String?
+  foodRating  Int? // 1-5 stars
+  serviceRating Int? // 1-5 stars
+  ambianceRating Int? // 1-5 stars
+  isVerified  Boolean         @default(false) // Verified purchase
+  isPublished Boolean         @default(true)
+  isFlagged   Boolean         @default(false)
+  flagReason  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  brand       Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  response    ReviewResponse?
+  media       ReviewMedia[]
+
+  @@index([brandId])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([rating])
+  @@index([isPublished])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+model ReviewResponse {
+  id        String   @id @default(uuid())
+  reviewId  String   @unique
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_responses")
+}
+
+model ReviewMedia {
+  id        String   @id @default(uuid())
+  reviewId  String
+  type      MediaType
+  url       String
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_media")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+// ============================================
+// Gift Cards & Store Credit
+// ============================================
+
+model GiftCard {
+  id              String                 @id @default(uuid())
+  brandId         String
+  code            String                 @unique
+  initialAmount   Decimal                @db.Decimal(12, 2)
+  balance         Decimal                @db.Decimal(12, 2)
+  currency        String                 @default("USD")
+  status          GiftCardStatus         @default(ACTIVE)
+  purchasedBy     String? // Customer ID
+  recipientName   String?
+  recipientEmail  String?
+  recipientPhone  String?
+  message         String?
+  expiresAt       DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  brand           Brand                  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  transactions    GiftCardTransaction[]
+
+  @@index([brandId])
+  @@index([code])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("gift_cards")
+}
+
+model GiftCardTransaction {
+  id         String             @id @default(uuid())
+  giftCardId String
+  orderId    String?
+  type       GiftCardTxnType
+  amount     Decimal            @db.Decimal(12, 2)
+  balance    Decimal            @db.Decimal(12, 2) // Balance after transaction
+  note       String?
+  createdAt  DateTime           @default(now())
+  giftCard   GiftCard           @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  order      Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([giftCardId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("gift_card_transactions")
+}
+
+model StoreCredit {
+  id           String                @id @default(uuid())
+  brandId      String
+  customerId   String
+  balance      Decimal               @db.Decimal(12, 2)
+  currency     String                @default("USD")
+  reason       String? // Refund, compensation, promotion
+  expiresAt    DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  brand        Brand                 @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  customer     Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactions StoreCreditTransaction[]
+
+  @@unique([brandId, customerId])
+  @@index([customerId])
+  @@map("store_credits")
+}
+
+model StoreCreditTransaction {
+  id            String       @id @default(uuid())
+  storeCreditId String
+  orderId       String?
+  type          StoreCreditTxnType
+  amount        Decimal      @db.Decimal(12, 2)
+  balance       Decimal      @db.Decimal(12, 2)
+  note          String?
+  createdAt     DateTime     @default(now())
+  storeCredit   StoreCredit  @relation(fields: [storeCreditId], references: [id], onDelete: Cascade)
+  order         Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([storeCreditId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("store_credit_transactions")
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+enum GiftCardTxnType {
+  PURCHASE
+  REDEMPTION
+  REFUND
+  ADJUSTMENT
+}
+
+enum StoreCreditTxnType {
+  CREDIT
+  DEBIT
+  REFUND
+  ADJUSTMENT
+  EXPIRATION
+}
+
+// ============================================
+// Third-Party Delivery Integration
+// ============================================
+
+model DeliveryProvider {
+  id            String              @id @default(uuid())
+  name          String              @unique // UBER_EATS, DOORDASH, GRUBHUB
+  displayName   String
+  isActive      Boolean             @default(true)
+  apiEndpoint   String?
+  webhookSecret String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  integrations  DeliveryIntegration[]
+
+  @@map("delivery_providers")
+}
+
+model DeliveryIntegration {
+  id                String            @id @default(uuid())
+  brandId           String
+  branchId          String?
+  providerId        String
+  isEnabled         Boolean           @default(true)
+  credentials       Json // Store encrypted API keys, tokens
+  settings          Json? // Provider-specific settings
+  lastSyncAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  brand             Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  provider          DeliveryProvider  @relation(fields: [providerId], references: [id])
+  orders            DeliveryOrder[]
+
+  @@unique([brandId, providerId])
+  @@index([brandId])
+  @@index([providerId])
+  @@map("delivery_integrations")
+}
+
+model DeliveryOrder {
+  id               String              @id @default(uuid())
+  integrationId    String
+  orderId          String              @unique // Our internal order ID
+  externalOrderId  String // Provider's order ID
+  provider         String // UBER_EATS, DOORDASH, etc.
+  status           DeliveryOrderStatus
+  customerName     String
+  customerPhone    String?
+  deliveryAddress  Json
+  items            Json
+  subtotal         Decimal             @db.Decimal(12, 2)
+  deliveryFee      Decimal             @db.Decimal(12, 2)
+  serviceFee       Decimal             @default(0) @db.Decimal(12, 2)
+  tip              Decimal             @default(0) @db.Decimal(12, 2)
+  tax              Decimal             @default(0) @db.Decimal(12, 2)
+  total            Decimal             @db.Decimal(12, 2)
+  commission       Decimal?            @db.Decimal(12, 2) // Platform commission
+  estimatedPickup  DateTime?
+  estimatedDelivery DateTime?
+  actualPickup     DateTime?
+  actualDelivery   DateTime?
+  driverName       String?
+  driverPhone      String?
+  specialInstructions String?
+  rawData          Json? // Store complete webhook payload
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  integration      DeliveryIntegration @relation(fields: [integrationId], references: [id])
+  order            Order               @relation(fields: [orderId], references: [id])
+
+  @@index([integrationId])
+  @@index([orderId])
+  @@index([externalOrderId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("delivery_orders")
+}
+
+enum DeliveryOrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  FAILED
+}
+
+// ============================================
+// Settings System
+// ============================================
+
+model Settings {
+  id                String   @id @default(uuid())
+  brandId           String   @unique
+  branchId          String?  @unique
+  
+  // Business Information
+  businessName      String?
+  businessAddress   String?
+  businessPhone     String?
+  businessEmail     String?
+  website           String?
+  logo              String?
+  
+  // Business Hours
+  businessHours     Json? // { monday: { open: "09:00", close: "22:00", closed: false }, ... }
+  timezone          String   @default("UTC")
+  
+  // Payment Settings
+  paymentSettings   Json? // { defaultGateway: "stripe", allowCash: true, allowCard: true, ... }
+  
+  // Receipt Settings
+  receiptSettings   Json? // { showLogo: true, footerText: "Thank you!", showTax: true, ... }
+  
+  // Order Settings
+  orderSettings     Json? // { autoAccept: false, prepTime: 15, maxFutureOrders: 7, ... }
+  
+  // Notification Settings
+  notifications     Json? // { emailOrders: true, smsOrders: false, pushOrders: true, ... }
+  
+  // Tax Settings
+  taxSettings       Json? // { includeTax: false, defaultTaxRate: 0, ... }
+  
+  // Feature Flags
+  features          Json? // { onlineOrdering: true, reservations: true, loyalty: false, ... }
+  
+  // Email Settings
+  emailSettings     Json? // { smtpHost: "", smtpPort: 587, fromEmail: "", ... }
+  
+  // Other Settings
+  currency          String   @default("USD")
+  language          String   @default("en")
+  dateFormat        String   @default("MM/DD/YYYY")
+  timeFormat        String   @default("12h") // 12h or 24h
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([brandId])
+  @@index([branchId])
+  @@map("settings")
 }

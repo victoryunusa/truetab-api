@@ -1,5 +1,5 @@
-const { register, login, refresh, logout } = require('./auth.service');
-const { registerSchema, loginSchema, refreshSchema } = require('./auth.validation');
+const { register, login, refresh, logout, forgotPassword, resetPassword } = require('./auth.service');
+const { registerSchema, loginSchema, refreshSchema, forgotPasswordSchema, resetPasswordSchema } = require('./auth.validation');
 
 async function registerController(req, res) {
   try {
@@ -55,9 +55,39 @@ async function logoutController(req, res) {
   }
 }
 
+async function forgotPasswordController(req, res) {
+  try {
+    const { value, error } = forgotPasswordSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
+
+    const result = await forgotPassword(value);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ error: err.message || 'Server error' });
+  }
+}
+
+async function resetPasswordController(req, res) {
+  try {
+    const { value, error } = resetPasswordSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) return res.status(400).json({ error: error.details.map(d => d.message) });
+
+    const result = await resetPassword(value);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ error: err.message || 'Server error' });
+  }
+}
+
 module.exports = {
   registerController,
   loginController,
   refreshController,
   logoutController,
+  forgotPasswordController,
+  resetPasswordController,
 };
