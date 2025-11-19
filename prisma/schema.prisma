@@ -51,68 +51,68 @@ model User {
 }
 
 model Brand {
-  id                  String                @id @default(uuid())
-  name                String
-  ownerId             String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  countryId           String?
-  currency            String
-  email               String                @unique
-  url                 String?               @unique
-  stripeCustomerId    String?               @unique
-  polarCustomerId     String?               @unique
-  paymentGateways     Json? // Array of enabled gateways with configs
-  defaultGateway      String? // Default payment gateway
-  branches            Branch[]
-  country             Country?              @relation(fields: [countryId], references: [id])
-  owner               User                  @relation("BrandOwner", fields: [ownerId], references: [id])
-  CashMovement        CashMovement[]
-  CashSession         CashSession[]
-  Category            Category[]
-  Customer            Customer[]
-  KitchenStation      KitchenStation[]
-  KitchenTicket       KitchenTicket[]
-  MenuCategory        MenuCategory[]
-  MenuItem            MenuItem[]
-  ModifierGroup       ModifierGroup[]
-  Order               Order[]
-  Payment             Payment[]
-  PrintJob            PrintJob[]
-  Printer             Printer[]
-  Product             Product[]
-  Promotion           Promotion[]
-  PurchaseOrder       PurchaseOrder[]
-  Recipe              Recipe[]
-  RegisterSession     RegisterSession[]
-  Register            Register[]
-  Reservation         Reservation[]
-  ServiceChargeConfig ServiceChargeConfig[]
-  StockAdjustment     StockAdjustment[]
-  StockTransaction    StockTransaction[]
-  StockTransfer       StockTransfer[]
-  subscription        Subscription?
-  Supplier            Supplier[]
-  Table               Table[]
-  TaxRate             TaxRate[]
-  TipSettlement       TipSettlement[]
-  Tip                 Tip[]
-  users               User[]                @relation("BrandUsers")
-  WaitlistEntry       WaitlistEntry[]
-  Zone                Zone[]
-  AIUsageLog          AIUsageLog[]
-  ShiftType           ShiftType[]
-  Shift               Shift[]
-  Attendance          Attendance[]
-  PayrollPeriod       PayrollPeriod[]
-  Payroll             Payroll[]
-  EmployeeProfile     EmployeeProfile[]
-  loyaltyPrograms     LoyaltyProgram[]
-  onlineMenus         OnlineMenu[]
-  campaigns           Campaign[]
-  reviews             Review[]
-  giftCards           GiftCard[]
-  storeCredits        StoreCredit[]
+  id                   String                @id @default(uuid())
+  name                 String
+  ownerId              String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  countryId            String?
+  currency             String
+  email                String                @unique
+  url                  String?               @unique
+  stripeCustomerId     String?               @unique
+  polarCustomerId      String?               @unique
+  paymentGateways      Json? // Array of enabled gateways with configs
+  defaultGateway       String? // Default payment gateway
+  branches             Branch[]
+  country              Country?              @relation(fields: [countryId], references: [id])
+  owner                User                  @relation("BrandOwner", fields: [ownerId], references: [id])
+  CashMovement         CashMovement[]
+  CashSession          CashSession[]
+  Category             Category[]
+  Customer             Customer[]
+  KitchenStation       KitchenStation[]
+  KitchenTicket        KitchenTicket[]
+  MenuCategory         MenuCategory[]
+  MenuItem             MenuItem[]
+  ModifierGroup        ModifierGroup[]
+  Order                Order[]
+  Payment              Payment[]
+  PrintJob             PrintJob[]
+  Printer              Printer[]
+  Product              Product[]
+  Promotion            Promotion[]
+  PurchaseOrder        PurchaseOrder[]
+  Recipe               Recipe[]
+  RegisterSession      RegisterSession[]
+  Register             Register[]
+  Reservation          Reservation[]
+  ServiceChargeConfig  ServiceChargeConfig[]
+  StockAdjustment      StockAdjustment[]
+  StockTransaction     StockTransaction[]
+  StockTransfer        StockTransfer[]
+  subscription         Subscription?
+  Supplier             Supplier[]
+  Table                Table[]
+  TaxRate              TaxRate[]
+  TipSettlement        TipSettlement[]
+  Tip                  Tip[]
+  users                User[]                @relation("BrandUsers")
+  WaitlistEntry        WaitlistEntry[]
+  Zone                 Zone[]
+  AIUsageLog           AIUsageLog[]
+  ShiftType            ShiftType[]
+  Shift                Shift[]
+  Attendance           Attendance[]
+  PayrollPeriod        PayrollPeriod[]
+  Payroll              Payroll[]
+  EmployeeProfile      EmployeeProfile[]
+  loyaltyPrograms      LoyaltyProgram[]
+  onlineMenus          OnlineMenu[]
+  campaigns            Campaign[]
+  reviews              Review[]
+  giftCards            GiftCard[]
+  storeCredits         StoreCredit[]
   deliveryIntegrations DeliveryIntegration[]
 
   @@unique([ownerId, name])
@@ -568,12 +568,14 @@ model PurchaseOrder {
   id          String              @id @default(uuid())
   brandId     String
   supplierId  String
+  code        String?             @unique
   totalAmount Decimal             @db.Decimal(12, 2)
   createdAt   DateTime            @default(now())
   createdBy   String?
   updatedAt   DateTime            @updatedAt
   status      POStatus            @default(DRAFT)
   items       PurchaseOrderItem[]
+  terms        String?     
   brand       Brand               @relation(fields: [brandId], references: [id])
   user        User?               @relation(fields: [createdBy], references: [id])
   supplier    Supplier            @relation(fields: [supplierId], references: [id])
@@ -902,64 +904,64 @@ model CustomerAddress {
 }
 
 model Order {
-  id                  String              @id @default(uuid())
-  brandId             String
-  branchId            String
-  tableId             String?
-  customerId          String?
-  total               Decimal             @default(0) @db.Decimal(12, 2)
-  createdAt           DateTime            @default(now())
-  createdById         String?
-  closedAt            DateTime?
-  covers              Int?
-  discount            Decimal             @default(0) @db.Decimal(12, 2)
-  notes               String?
-  paidTotal           Decimal             @default(0) @db.Decimal(12, 2)
-  service             Decimal             @default(0) @db.Decimal(12, 2)
-  subtotal            Decimal             @default(0) @db.Decimal(12, 2)
-  tax                 Decimal             @default(0) @db.Decimal(12, 2)
-  tip                 Decimal             @default(0) @db.Decimal(12, 2)
-  type                OrderType           @default(DINE_IN)
-  status              OrderStatus         @default(DRAFT)
-  waiterId            String?
-  billType            BillType            @default(FINE_DINE)
+  id                      String                   @id @default(uuid())
+  brandId                 String
+  branchId                String
+  tableId                 String?
+  customerId              String?
+  total                   Decimal                  @default(0) @db.Decimal(12, 2)
+  createdAt               DateTime                 @default(now())
+  createdById             String?
+  closedAt                DateTime?
+  covers                  Int?
+  discount                Decimal                  @default(0) @db.Decimal(12, 2)
+  notes                   String?
+  paidTotal               Decimal                  @default(0) @db.Decimal(12, 2)
+  service                 Decimal                  @default(0) @db.Decimal(12, 2)
+  subtotal                Decimal                  @default(0) @db.Decimal(12, 2)
+  tax                     Decimal                  @default(0) @db.Decimal(12, 2)
+  tip                     Decimal                  @default(0) @db.Decimal(12, 2)
+  type                    OrderType                @default(DINE_IN)
+  status                  OrderStatus              @default(DRAFT)
+  waiterId                String?
+  billType                BillType                 @default(FINE_DINE)
   // Online ordering fields
-  orderNumber         String?             @unique
-  isOnlineOrder       Boolean             @default(false)
-  customerName        String?
-  customerEmail       String?
-  customerPhone       String?
-  deliveryAddress     Json?
-  deliveryFee         Decimal             @default(0) @db.Decimal(12, 2)
-  paymentStatus       PaymentStatus?      @default(PENDING)
-  paymentIntentId     String?             @unique
-  paymentMethod       String?
-  transactionId       String?
-  paidAt              DateTime?
-  specialInstructions String?
-  estimatedTime       Int?
-  scheduledFor        DateTime?
-  completedAt         DateTime?
-  canceledAt          DateTime?
-  cancelReason        String?
-  KitchenTicket       KitchenTicket[]
-  items               OrderItem[]
-  logs                OrderLog[]
-  taxes               OrderTax[]
-  branch              Branch              @relation(fields: [branchId], references: [id])
-  brand               Brand               @relation(fields: [brandId], references: [id])
-  createdBy           User?               @relation("OrderCreatedBy", fields: [createdById], references: [id])
-  customer            Customer?           @relation(fields: [customerId], references: [id])
-  table               Table?              @relation(fields: [tableId], references: [id])
-  waiter              User?               @relation("OrderWaiter", fields: [waiterId], references: [id])
-  payments            Payment[]
-  PromoRedemption     PromoRedemption[]
-  Tip                 Tip[]
-  walletTransactions  WalletTransaction[]
-  reviews             Review[]
-  giftCardTransactions GiftCardTransaction[]
+  orderNumber             String?                  @unique
+  isOnlineOrder           Boolean                  @default(false)
+  customerName            String?
+  customerEmail           String?
+  customerPhone           String?
+  deliveryAddress         Json?
+  deliveryFee             Decimal                  @default(0) @db.Decimal(12, 2)
+  paymentStatus           PaymentStatus?           @default(PENDING)
+  paymentIntentId         String?                  @unique
+  paymentMethod           String?
+  transactionId           String?
+  paidAt                  DateTime?
+  specialInstructions     String?
+  estimatedTime           Int?
+  scheduledFor            DateTime?
+  completedAt             DateTime?
+  canceledAt              DateTime?
+  cancelReason            String?
+  KitchenTicket           KitchenTicket[]
+  items                   OrderItem[]
+  logs                    OrderLog[]
+  taxes                   OrderTax[]
+  branch                  Branch                   @relation(fields: [branchId], references: [id])
+  brand                   Brand                    @relation(fields: [brandId], references: [id])
+  createdBy               User?                    @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  customer                Customer?                @relation(fields: [customerId], references: [id])
+  table                   Table?                   @relation(fields: [tableId], references: [id])
+  waiter                  User?                    @relation("OrderWaiter", fields: [waiterId], references: [id])
+  payments                Payment[]
+  PromoRedemption         PromoRedemption[]
+  Tip                     Tip[]
+  walletTransactions      WalletTransaction[]
+  reviews                 Review[]
+  giftCardTransactions    GiftCardTransaction[]
   storeCreditTransactions StoreCreditTransaction[]
-  deliveryOrder       DeliveryOrder?
+  deliveryOrder           DeliveryOrder?
 
   @@index([brandId])
   @@index([branchId])
@@ -1116,28 +1118,28 @@ model VariantRoute {
 }
 
 model KitchenTicket {
-  id              String              @id @default(uuid())
-  brandId         String
-  branchId        String
-  orderId         String
-  stationId       String
-  status          KitchenTicketStatus @default(NEW)
-  priority        Int                 @default(0) // Higher number = higher priority
-  estimatedTime   Int?                // Estimated prep time in minutes
-  acceptedAt      DateTime?           // When kitchen accepted the ticket
-  startedAt       DateTime?           // When prep started
-  readyAt         DateTime?           // When item was ready
-  servedAt        DateTime?           // When item was served
-  bumpedAt        DateTime?           // When ticket was bumped/cleared
-  actualPrepTime  Int?                // Actual time taken (in minutes)
-  delayReason     String?             // If delayed, reason
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  items           KitchenTicketItem[]
-  branch          Branch              @relation(fields: [branchId], references: [id])
-  brand           Brand               @relation(fields: [brandId], references: [id])
-  order           Order               @relation(fields: [orderId], references: [id])
-  station         KitchenStation      @relation(fields: [stationId], references: [id])
+  id             String              @id @default(uuid())
+  brandId        String
+  branchId       String
+  orderId        String
+  stationId      String
+  status         KitchenTicketStatus @default(NEW)
+  priority       Int                 @default(0) // Higher number = higher priority
+  estimatedTime  Int? // Estimated prep time in minutes
+  acceptedAt     DateTime? // When kitchen accepted the ticket
+  startedAt      DateTime? // When prep started
+  readyAt        DateTime? // When item was ready
+  servedAt       DateTime? // When item was served
+  bumpedAt       DateTime? // When ticket was bumped/cleared
+  actualPrepTime Int? // Actual time taken (in minutes)
+  delayReason    String? // If delayed, reason
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  items          KitchenTicketItem[]
+  branch         Branch              @relation(fields: [branchId], references: [id])
+  brand          Brand               @relation(fields: [brandId], references: [id])
+  order          Order               @relation(fields: [orderId], references: [id])
+  station        KitchenStation      @relation(fields: [stationId], references: [id])
 
   @@index([brandId])
   @@index([branchId])
@@ -2104,25 +2106,25 @@ enum PayoutMethod {
 // ============================================
 
 model Campaign {
-  id             String              @id @default(uuid())
+  id             String               @id @default(uuid())
   brandId        String
   name           String
   description    String?
   type           CampaignType
-  status         CampaignStatus      @default(DRAFT)
+  status         CampaignStatus       @default(DRAFT)
   channel        CampaignChannel
   startDate      DateTime?
   endDate        DateTime?
-  budget         Decimal?            @db.Decimal(12, 2)
+  budget         Decimal?             @db.Decimal(12, 2)
   targetAudience Json? // Flexible targeting criteria
   content        Json // Campaign content (email, sms, push notification content)
   imageUrl       String?
   callToAction   String?
   link           String?
   promoCode      String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  brand          Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   metrics        CampaignMetrics?
   audiences      CampaignAudience[]
   engagements    CampaignEngagement[]
@@ -2135,21 +2137,21 @@ model Campaign {
 }
 
 model CampaignAudience {
-  id            String   @id @default(uuid())
-  campaignId    String
-  customerId    String?
-  email         String?
-  phone         String?
+  id              String    @id @default(uuid())
+  campaignId      String
+  customerId      String?
+  email           String?
+  phone           String?
   segmentCriteria Json? // How they were selected
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  openedAt      DateTime?
-  clickedAt     DateTime?
-  convertedAt   DateTime?
-  unsubscribedAt DateTime?
-  createdAt     DateTime @default(now())
-  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  convertedAt     DateTime?
+  unsubscribedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
   @@index([customerId])
@@ -2158,29 +2160,29 @@ model CampaignAudience {
 }
 
 model CampaignMetrics {
-  id              String   @id @default(uuid())
-  campaignId      String   @unique
-  totalSent       Int      @default(0)
-  totalDelivered  Int      @default(0)
-  totalOpened     Int      @default(0)
-  totalClicked    Int      @default(0)
-  totalConverted  Int      @default(0)
-  totalUnsubscribed Int    @default(0)
-  totalRevenue    Decimal  @default(0) @db.Decimal(12, 2)
-  uniqueOpens     Int      @default(0)
-  uniqueClicks    Int      @default(0)
-  bounceRate      Decimal? @db.Decimal(5, 2)
-  conversionRate  Decimal? @db.Decimal(5, 2)
-  roi             Decimal? @db.Decimal(10, 2) // Return on Investment
-  updatedAt       DateTime @updatedAt
-  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  campaignId        String   @unique
+  totalSent         Int      @default(0)
+  totalDelivered    Int      @default(0)
+  totalOpened       Int      @default(0)
+  totalClicked      Int      @default(0)
+  totalConverted    Int      @default(0)
+  totalUnsubscribed Int      @default(0)
+  totalRevenue      Decimal  @default(0) @db.Decimal(12, 2)
+  uniqueOpens       Int      @default(0)
+  uniqueClicks      Int      @default(0)
+  bounceRate        Decimal? @db.Decimal(5, 2)
+  conversionRate    Decimal? @db.Decimal(5, 2)
+  roi               Decimal? @db.Decimal(10, 2) // Return on Investment
+  updatedAt         DateTime @updatedAt
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@map("campaign_metrics")
 }
 
 model CampaignEngagement {
-  id         String             @id @default(uuid())
+  id         String            @id @default(uuid())
   campaignId String
   customerId String?
   email      String?
@@ -2188,9 +2190,9 @@ model CampaignEngagement {
   eventData  Json? // Additional event information
   ipAddress  String?
   userAgent  String?
-  createdAt  DateTime           @default(now())
-  campaign   Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  customer   Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime          @default(now())
+  campaign   Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer   Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
   @@index([customerId])
@@ -2245,27 +2247,27 @@ enum CampaignEventType {
 // ============================================
 
 model Review {
-  id          String          @id @default(uuid())
-  brandId     String
-  customerId  String
-  orderId     String?
-  rating      Int // 1-5 stars
-  title       String?
-  comment     String?
-  foodRating  Int? // 1-5 stars
-  serviceRating Int? // 1-5 stars
+  id             String          @id @default(uuid())
+  brandId        String
+  customerId     String
+  orderId        String?
+  rating         Int // 1-5 stars
+  title          String?
+  comment        String?
+  foodRating     Int? // 1-5 stars
+  serviceRating  Int? // 1-5 stars
   ambianceRating Int? // 1-5 stars
-  isVerified  Boolean         @default(false) // Verified purchase
-  isPublished Boolean         @default(true)
-  isFlagged   Boolean         @default(false)
-  flagReason  String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  brand       Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  response    ReviewResponse?
-  media       ReviewMedia[]
+  isVerified     Boolean         @default(false) // Verified purchase
+  isPublished    Boolean         @default(true)
+  isFlagged      Boolean         @default(false)
+  flagReason     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  brand          Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order          Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  response       ReviewResponse?
+  media          ReviewMedia[]
 
   @@index([brandId])
   @@index([customerId])
@@ -2289,12 +2291,12 @@ model ReviewResponse {
 }
 
 model ReviewMedia {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   reviewId  String
   type      MediaType
   url       String
-  createdAt DateTime @default(now())
-  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  review    Review    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@index([reviewId])
   @@map("review_media")
@@ -2310,23 +2312,23 @@ enum MediaType {
 // ============================================
 
 model GiftCard {
-  id              String                 @id @default(uuid())
-  brandId         String
-  code            String                 @unique
-  initialAmount   Decimal                @db.Decimal(12, 2)
-  balance         Decimal                @db.Decimal(12, 2)
-  currency        String                 @default("USD")
-  status          GiftCardStatus         @default(ACTIVE)
-  purchasedBy     String? // Customer ID
-  recipientName   String?
-  recipientEmail  String?
-  recipientPhone  String?
-  message         String?
-  expiresAt       DateTime?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  brand           Brand                  @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  transactions    GiftCardTransaction[]
+  id             String                @id @default(uuid())
+  brandId        String
+  code           String                @unique
+  initialAmount  Decimal               @db.Decimal(12, 2)
+  balance        Decimal               @db.Decimal(12, 2)
+  currency       String                @default("USD")
+  status         GiftCardStatus        @default(ACTIVE)
+  purchasedBy    String? // Customer ID
+  recipientName  String?
+  recipientEmail String?
+  recipientPhone String?
+  message        String?
+  expiresAt      DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  brand          Brand                 @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  transactions   GiftCardTransaction[]
 
   @@index([brandId])
   @@index([code])
@@ -2336,16 +2338,16 @@ model GiftCard {
 }
 
 model GiftCardTransaction {
-  id         String             @id @default(uuid())
+  id         String          @id @default(uuid())
   giftCardId String
   orderId    String?
   type       GiftCardTxnType
-  amount     Decimal            @db.Decimal(12, 2)
-  balance    Decimal            @db.Decimal(12, 2) // Balance after transaction
+  amount     Decimal         @db.Decimal(12, 2)
+  balance    Decimal         @db.Decimal(12, 2) // Balance after transaction
   note       String?
-  createdAt  DateTime           @default(now())
-  giftCard   GiftCard           @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
-  order      Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt  DateTime        @default(now())
+  giftCard   GiftCard        @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  order      Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([giftCardId])
   @@index([orderId])
@@ -2354,17 +2356,17 @@ model GiftCardTransaction {
 }
 
 model StoreCredit {
-  id           String                @id @default(uuid())
+  id           String                   @id @default(uuid())
   brandId      String
   customerId   String
-  balance      Decimal               @db.Decimal(12, 2)
-  currency     String                @default("USD")
+  balance      Decimal                  @db.Decimal(12, 2)
+  currency     String                   @default("USD")
   reason       String? // Refund, compensation, promotion
   expiresAt    DateTime?
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
-  brand        Brand                 @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  customer     Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  brand        Brand                    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  customer     Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
   transactions StoreCreditTransaction[]
 
   @@unique([brandId, customerId])
@@ -2373,16 +2375,16 @@ model StoreCredit {
 }
 
 model StoreCreditTransaction {
-  id            String       @id @default(uuid())
+  id            String             @id @default(uuid())
   storeCreditId String
   orderId       String?
   type          StoreCreditTxnType
-  amount        Decimal      @db.Decimal(12, 2)
-  balance       Decimal      @db.Decimal(12, 2)
+  amount        Decimal            @db.Decimal(12, 2)
+  balance       Decimal            @db.Decimal(12, 2)
   note          String?
-  createdAt     DateTime     @default(now())
-  storeCredit   StoreCredit  @relation(fields: [storeCreditId], references: [id], onDelete: Cascade)
-  order         Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+  storeCredit   StoreCredit        @relation(fields: [storeCreditId], references: [id], onDelete: Cascade)
+  order         Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([storeCreditId])
   @@index([orderId])
@@ -2417,33 +2419,33 @@ enum StoreCreditTxnType {
 // ============================================
 
 model DeliveryProvider {
-  id            String              @id @default(uuid())
-  name          String              @unique // UBER_EATS, DOORDASH, GRUBHUB
+  id            String                @id @default(uuid())
+  name          String                @unique // UBER_EATS, DOORDASH, GRUBHUB
   displayName   String
-  isActive      Boolean             @default(true)
+  isActive      Boolean               @default(true)
   apiEndpoint   String?
   webhookSecret String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
   integrations  DeliveryIntegration[]
 
   @@map("delivery_providers")
 }
 
 model DeliveryIntegration {
-  id                String            @id @default(uuid())
-  brandId           String
-  branchId          String?
-  providerId        String
-  isEnabled         Boolean           @default(true)
-  credentials       Json // Store encrypted API keys, tokens
-  settings          Json? // Provider-specific settings
-  lastSyncAt        DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  brand             Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  provider          DeliveryProvider  @relation(fields: [providerId], references: [id])
-  orders            DeliveryOrder[]
+  id          String           @id @default(uuid())
+  brandId     String
+  branchId    String?
+  providerId  String
+  isEnabled   Boolean          @default(true)
+  credentials Json // Store encrypted API keys, tokens
+  settings    Json? // Provider-specific settings
+  lastSyncAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  brand       Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  provider    DeliveryProvider @relation(fields: [providerId], references: [id])
+  orders      DeliveryOrder[]
 
   @@unique([brandId, providerId])
   @@index([brandId])
@@ -2452,35 +2454,35 @@ model DeliveryIntegration {
 }
 
 model DeliveryOrder {
-  id               String              @id @default(uuid())
-  integrationId    String
-  orderId          String              @unique // Our internal order ID
-  externalOrderId  String // Provider's order ID
-  provider         String // UBER_EATS, DOORDASH, etc.
-  status           DeliveryOrderStatus
-  customerName     String
-  customerPhone    String?
-  deliveryAddress  Json
-  items            Json
-  subtotal         Decimal             @db.Decimal(12, 2)
-  deliveryFee      Decimal             @db.Decimal(12, 2)
-  serviceFee       Decimal             @default(0) @db.Decimal(12, 2)
-  tip              Decimal             @default(0) @db.Decimal(12, 2)
-  tax              Decimal             @default(0) @db.Decimal(12, 2)
-  total            Decimal             @db.Decimal(12, 2)
-  commission       Decimal?            @db.Decimal(12, 2) // Platform commission
-  estimatedPickup  DateTime?
-  estimatedDelivery DateTime?
-  actualPickup     DateTime?
-  actualDelivery   DateTime?
-  driverName       String?
-  driverPhone      String?
+  id                  String              @id @default(uuid())
+  integrationId       String
+  orderId             String              @unique // Our internal order ID
+  externalOrderId     String // Provider's order ID
+  provider            String // UBER_EATS, DOORDASH, etc.
+  status              DeliveryOrderStatus
+  customerName        String
+  customerPhone       String?
+  deliveryAddress     Json
+  items               Json
+  subtotal            Decimal             @db.Decimal(12, 2)
+  deliveryFee         Decimal             @db.Decimal(12, 2)
+  serviceFee          Decimal             @default(0) @db.Decimal(12, 2)
+  tip                 Decimal             @default(0) @db.Decimal(12, 2)
+  tax                 Decimal             @default(0) @db.Decimal(12, 2)
+  total               Decimal             @db.Decimal(12, 2)
+  commission          Decimal?            @db.Decimal(12, 2) // Platform commission
+  estimatedPickup     DateTime?
+  estimatedDelivery   DateTime?
+  actualPickup        DateTime?
+  actualDelivery      DateTime?
+  driverName          String?
+  driverPhone         String?
   specialInstructions String?
-  rawData          Json? // Store complete webhook payload
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  integration      DeliveryIntegration @relation(fields: [integrationId], references: [id])
-  order            Order               @relation(fields: [orderId], references: [id])
+  rawData             Json? // Store complete webhook payload
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  integration         DeliveryIntegration @relation(fields: [integrationId], references: [id])
+  order               Order               @relation(fields: [orderId], references: [id])
 
   @@index([integrationId])
   @@index([orderId])
@@ -2507,52 +2509,52 @@ enum DeliveryOrderStatus {
 // ============================================
 
 model Settings {
-  id                String   @id @default(uuid())
-  brandId           String   @unique
-  branchId          String?  @unique
-  
+  id       String  @id @default(uuid())
+  brandId  String  @unique
+  branchId String? @unique
+
   // Business Information
-  businessName      String?
-  businessAddress   String?
-  businessPhone     String?
-  businessEmail     String?
-  website           String?
-  logo              String?
-  
+  businessName    String?
+  businessAddress String?
+  businessPhone   String?
+  businessEmail   String?
+  website         String?
+  logo            String?
+
   // Business Hours
-  businessHours     Json? // { monday: { open: "09:00", close: "22:00", closed: false }, ... }
-  timezone          String   @default("UTC")
-  
+  businessHours Json? // { monday: { open: "09:00", close: "22:00", closed: false }, ... }
+  timezone      String @default("UTC")
+
   // Payment Settings
-  paymentSettings   Json? // { defaultGateway: "stripe", allowCash: true, allowCard: true, ... }
-  
+  paymentSettings Json? // { defaultGateway: "stripe", allowCash: true, allowCard: true, ... }
+
   // Receipt Settings
-  receiptSettings   Json? // { showLogo: true, footerText: "Thank you!", showTax: true, ... }
-  
+  receiptSettings Json? // { showLogo: true, footerText: "Thank you!", showTax: true, ... }
+
   // Order Settings
-  orderSettings     Json? // { autoAccept: false, prepTime: 15, maxFutureOrders: 7, ... }
-  
+  orderSettings Json? // { autoAccept: false, prepTime: 15, maxFutureOrders: 7, ... }
+
   // Notification Settings
-  notifications     Json? // { emailOrders: true, smsOrders: false, pushOrders: true, ... }
-  
+  notifications Json? // { emailOrders: true, smsOrders: false, pushOrders: true, ... }
+
   // Tax Settings
-  taxSettings       Json? // { includeTax: false, defaultTaxRate: 0, ... }
-  
+  taxSettings Json? // { includeTax: false, defaultTaxRate: 0, ... }
+
   // Feature Flags
-  features          Json? // { onlineOrdering: true, reservations: true, loyalty: false, ... }
-  
+  features Json? // { onlineOrdering: true, reservations: true, loyalty: false, ... }
+
   // Email Settings
-  emailSettings     Json? // { smtpHost: "", smtpPort: 587, fromEmail: "", ... }
-  
+  emailSettings Json? // { smtpHost: "", smtpPort: 587, fromEmail: "", ... }
+
   // Other Settings
-  currency          String   @default("USD")
-  language          String   @default("en")
-  dateFormat        String   @default("MM/DD/YYYY")
-  timeFormat        String   @default("12h") // 12h or 24h
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  currency   String @default("USD")
+  language   String @default("en")
+  dateFormat String @default("MM/DD/YYYY")
+  timeFormat String @default("12h") // 12h or 24h
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([brandId])
   @@index([branchId])
   @@map("settings")
