@@ -1,45 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Google Fonts (works in Gmail, Apple Mail, iOS Mail, but not Outlook Windows) -->
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-mail-client" content="Nine">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <title>Welcome to Nine - Your Demo Code</title>
+  
+  <style>
+    /* Reset styles to ensure consistency */
+    body, table, td, a { font-size: 16px; line-height: 1.6; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
+    img { border: 0; line-height: 100%; outline: none; text-decoration: none; display: block; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+
+    /* Custom Figtree Font (Use only for clients that support it) */
+    @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap');
+    .figtree-font { font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif; }
+  </style>
 </head>
-<body style="font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f4; padding: 20px; color: #333; margin: 0;">
-  <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 12px; overflow: hidden;">
-    <!-- Header -->
-    <div style="background: #003d31; color: #fff; text-align: center; padding: 30px 20px;">
-      <h1 style="margin-bottom: 10px; font-size: 22px; font-weight: 600; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">Welcome to Nine!</h1>
-      <p style="margin: 0; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">Your demo request has been approved</p>
-    </div>
 
-    <!-- Content -->
-    <div style="padding: 30px 20px; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
-      <p style="margin: 0 0 16px;">Hi {{requesterName}},</p>
-      <p style="margin: 0 0 16px;">We’re excited to have you try out Nine 🎉</p>
+<body class="figtree-font" style="margin: 0; padding: 0; word-spacing: normal; background-color: #f4f7f6;">
+  
+  <div role="article" aria-label="Welcome Email" lang="en" style="text-size-adjust: 100%; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; border: 0; border-spacing: 0; background-color: #f4f7f6;">
+      <tr>
+        <td align="center" style="padding: 0;">
+          
+          <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; border-spacing: 0; text-align: left; background-color: #ffffff; border-radius: 12px; margin: 30px 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            
+            <tr>
+              <td style="background-color: #003d31; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+                <h1 class="figtree-font" style="margin: 0 0 8px; font-size: 24px; font-weight: 700; color: #ffffff;">
+                  Welcome to Nine!
+                </h1>
+                <p class="figtree-font" style="margin: 0; font-size: 16px; color: #ffffff;">
+                  Your exclusive demo request has been approved.
+                </p>
+              </td>
+            </tr>
 
-      <p style="margin: 0 0 16px;">Use the registration code below to sign up:</p>
+            <tr>
+              <td style="padding: 30px 25px; color: #333333;" class="figtree-font">
+                
+                <p style="margin: 0 0 20px;">Hi {{requesterName}},</p>
+                
+                <p style="margin: 0 0 20px;">We're excited to have you try out Nine! We know you'll love the features designed to streamline your workflow 🎉</p>
 
-      <div style="background: #f8f9fa; border: 1px dashed #003d31; padding: 20px; text-align: center; margin: 20px 0; font-size: 20px; font-weight: bold; color: #003d31; letter-spacing: 2px; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
-        {{code}}
-      </div>
+                <p style="margin: 0 0 10px; text-align: center; font-weight: 500;">Your exclusive registration code:</p>
 
-      <p style="text-align: center; margin: 0 0 16px;">
-        <a href="{{registerUrl}}" style="display: inline-block; background: #003d31; color: #ffffff; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; text-decoration: none; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
-          Register Now
-        </a>
-      </p>
+                <div style="margin: 20px 0;">
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; border-spacing: 0;">
+                    <tr>
+                      <td align="center" style="background-color: #f0f7f5; border: 1px dashed #003d31; padding: 20px; border-radius: 6px;">
+                        <span class="figtree-font" style="display: block; font-size: 24px; font-weight: bold; color: #003d31; letter-spacing: 3px;">
+                          {{code}}
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
 
-      <p style="margin: 0 0 8px;">If the button doesn’t work, copy and paste this link in your browser:</p>
-      <p style="word-break: break-all; color: #003d31; margin: 0 0 16px;">{{registerUrl}}</p>
-    </div>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="{{registerUrl}}" class="figtree-font" style="display: inline-block; background: #003d31; color: #ffffff; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    Register Now
+                  </a>
+                  </div>
 
-    <!-- Footer -->
-    <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 13px; color: #777; font-family: 'Figtree', Tahoma, Geneva, Verdana, sans-serif;">
-      &copy; {{year}} Nine Technologies Inc. <br/>
-      This code is valid until {{expiresAt}}
-    </div>
+                <p style="margin: 0 0 8px; font-size: 14px; text-align: center; color: #777777;">
+                  If the button doesn’t work, copy and paste the link below:
+                </p>
+                <p style="word-break: break-all; color: #003d31; font-size: 14px; text-align: center; margin: 0;">
+                  <a href="{{registerUrl}}" style="color: #003d31; text-decoration: underline;">{{registerUrl}}</a>
+                </p>
+              
+              </td>
+            </tr>
+            
+            <tr>
+              <td style="padding: 20px 25px; background-color: #f0f7f5; border-radius: 0 0 12px 12px; text-align: center; font-size: 13px; color: #777777;" class="figtree-font">
+                <p style="margin: 0 0 5px;">
+                  This code is valid until **{{expiresAt}}**
+                </p>
+                <p style="margin: 0;">
+                  &copy; {{year}} Nine Technologies Inc. 
+                </p>
+              </td>
+            </tr>
+
+          </table>
+          </td>
+      </tr>
+    </table>
   </div>
-</body>
+  </body>
 </html>
