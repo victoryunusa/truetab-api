@@ -1,9 +1,17 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-async function listForItem(itemId, { brandId }) {
+function buildScope(brandId, branchId) {
+  const where = { brandId };
+  if (branchId) {
+    where.branchId = branchId;
+  }
+  return where;
+}
+
+async function listForItem(itemId, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   return prisma.itemVariant.findMany({
@@ -12,25 +20,25 @@ async function listForItem(itemId, { brandId }) {
   });
 }
 
-async function createForItem(itemId, { brandId, ...data }) {
+async function createForItem(itemId, { brandId, branchId, ...data }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   return prisma.itemVariant.create({ data: { ...data, itemId } });
 }
 
-async function update(variantId, { brandId, ...data }) {
+async function update(variantId, { brandId, branchId, ...data }) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchId) },
   });
   if (!variant) throw new Error("Variant not found");
   return prisma.itemVariant.update({ where: { id: variantId }, data });
 }
 
-async function remove(variantId, { brandId }) {
+async function remove(variantId, { brandId, branchId }) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchId) },
   });
   if (!variant) throw new Error("Variant not found");
   await prisma.itemVariantModifierGroup.deleteMany({ where: { variantId } });
@@ -38,9 +46,9 @@ async function remove(variantId, { brandId }) {
   await prisma.itemVariant.delete({ where: { id: variantId } });
 }
 
-async function listBranchOverrides(variantId, { brandId }) {
+async function listBranchOverrides(variantId, { brandId, branchId }) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchId) },
   });
   if (!variant) throw new Error("Variant not found");
   return prisma.branchItemVariant.findMany({
@@ -52,10 +60,10 @@ async function listBranchOverrides(variantId, { brandId }) {
 async function upsertBranchOverride(
   variantId,
   branchId,
-  { brandId, price, isAvailable }
+  { brandId, branchIdContext, price, isAvailable }
 ) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchIdContext) },
   });
   if (!variant) throw new Error("Variant not found");
   // ensure branch belongs to same brand
@@ -71,9 +79,9 @@ async function upsertBranchOverride(
   });
 }
 
-async function deleteBranchOverride(variantId, branchId, { brandId }) {
+async function deleteBranchOverride(variantId, branchId, { brandId, branchIdContext }) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchIdContext) },
   });
   if (!variant) throw new Error("Variant not found");
   await prisma.branchItemVariant.delete({
@@ -81,13 +89,13 @@ async function deleteBranchOverride(variantId, branchId, { brandId }) {
   });
 }
 
-async function linkModifierGroups(variantId, { brandId, groupIds }) {
+async function linkModifierGroups(variantId, { brandId, branchId, groupIds }) {
   const variant = await prisma.itemVariant.findFirst({
-    where: { id: variantId, item: { brandId } },
+    where: { id: variantId, item: buildScope(brandId, branchId) },
   });
   if (!variant) throw new Error("Variant not found");
   const groups = await prisma.modifierGroup.findMany({
-    where: { id: { in: groupIds }, brandId },
+    where: { id: { in: groupIds }, ...buildScope(brandId, branchId) },
   });
   if (groups.length !== groupIds.length)
     throw new Error("Some modifier groups not found in brand");

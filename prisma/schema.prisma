@@ -140,6 +140,13 @@ model Branch {
   Payment             Payment[]
   PrintJob            PrintJob[]
   Printer             Printer[]
+  MenuCategory        MenuCategory[]
+  MenuItem            MenuItem[]
+  ModifierGroup       ModifierGroup[]
+  Product             Product[]
+  Promotion           Promotion[]
+  PurchaseOrder       PurchaseOrder[]
+  Recipe              Recipe[]
   RegisterSession     RegisterSession[]
   Register            Register[]
   Reservation         Reservation[]
@@ -160,6 +167,7 @@ model Branch {
   Attendance          Attendance[]
   PayrollPeriod       PayrollPeriod[]
   Payroll             Payroll[]
+  Category            Category[]
 
   @@unique([brandId, name])
   @@index([brandId])
@@ -309,6 +317,7 @@ model Country {
 model MenuCategory {
   id        String         @id @default(uuid())
   brandId   String
+  branchId  String?
   name      String
   parentId  String?
   sortOrder Int            @default(0)
@@ -316,6 +325,7 @@ model MenuCategory {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   items     ItemCategory[]
+  branch    Branch?        @relation(fields: [branchId], references: [id], onDelete: Cascade)
   brand     Brand          @relation(fields: [brandId], references: [id])
   parent    MenuCategory?  @relation("CategoryChildren", fields: [parentId], references: [id])
   children  MenuCategory[] @relation("CategoryChildren")
@@ -327,6 +337,7 @@ model MenuCategory {
 model MenuItem {
   id             String              @id @default(uuid())
   brandId        String
+  branchId       String?
   defaultName    String
   description    String?
   sku            String?             @unique
@@ -340,6 +351,7 @@ model MenuItem {
   itemRoutes     ItemRoute[]
   i18n           MenuItemI18n[]
   variants       ItemVariant[]
+  branch         Branch?             @relation(fields: [branchId], references: [id], onDelete: Cascade)
   brand          Brand               @relation(fields: [brandId], references: [id])
   OrderItem      OrderItem[]
   recipes        Recipe[]
@@ -386,6 +398,7 @@ model ItemVariant {
 model ModifierGroup {
   id           String                     @id @default(uuid())
   brandId      String
+  branchId     String?
   name         String
   minSelect    Int                        @default(0)
   maxSelect    Int                        @default(1)
@@ -395,6 +408,7 @@ model ModifierGroup {
   updatedAt    DateTime                   @updatedAt
   itemLinks    ItemModifierGroup[]
   variantLinks ItemVariantModifierGroup[]
+  branch       Branch?                    @relation(fields: [branchId], references: [id], onDelete: Cascade)
   brand        Brand                      @relation(fields: [brandId], references: [id])
   options      ModifierOption[]
 
@@ -490,6 +504,7 @@ model Supplier {
 model Product {
   id                String              @id @default(uuid())
   brandId           String
+  branchId          String?
   name              String
   sku               String?             @unique
   unit              String
@@ -502,6 +517,7 @@ model Product {
   description       String?
   sellPrice         Decimal             @db.Decimal(10, 2)
   trackStock        Boolean             @default(true)
+  branch            Branch?             @relation(fields: [branchId], references: [id])
   brand             Brand               @relation(fields: [brandId], references: [id])
   category          Category?           @relation(fields: [categoryId], references: [id])
   PurchaseOrderItem PurchaseOrderItem[]
@@ -519,9 +535,11 @@ model Product {
 model Category {
   id        String    @id @default(uuid())
   brandId   String
+  branchId  String?
   name      String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  branch    Branch?   @relation(fields: [branchId], references: [id])
   brand     Brand     @relation(fields: [brandId], references: [id])
   products  Product[]
 
@@ -567,6 +585,7 @@ model StockTransaction {
 model PurchaseOrder {
   id          String              @id @default(uuid())
   brandId     String
+  branchId    String?
   supplierId  String
   code        String?             @unique
   totalAmount Decimal             @db.Decimal(12, 2)
@@ -575,7 +594,8 @@ model PurchaseOrder {
   updatedAt   DateTime            @updatedAt
   status      POStatus            @default(DRAFT)
   items       PurchaseOrderItem[]
-  terms        String?     
+  terms       String?
+  branch      Branch?             @relation(fields: [branchId], references: [id])
   brand       Brand               @relation(fields: [brandId], references: [id])
   user        User?               @relation(fields: [createdBy], references: [id])
   supplier    Supplier            @relation(fields: [supplierId], references: [id])
@@ -654,6 +674,7 @@ model StockTransferItem {
 model Recipe {
   id        String       @id @default(uuid())
   brandId   String
+  branchId  String?
   itemId    String?
   variantId String?
   name      String
@@ -661,6 +682,7 @@ model Recipe {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   lines     RecipeItem[]
+  branch    Branch?      @relation(fields: [branchId], references: [id])
   brand     Brand        @relation(fields: [brandId], references: [id])
   item      MenuItem?    @relation(fields: [itemId], references: [id])
   variant   ItemVariant? @relation(fields: [variantId], references: [id])
@@ -1318,6 +1340,8 @@ model Promotion {
   updatedAt      DateTime          @updatedAt
   redemptions    PromoRedemption[]
   brand          Brand             @relation(fields: [brandId], references: [id])
+  Branch         Branch?           @relation(fields: [branchId], references: [id])
+  branchId       String?
 
   @@index([brandId, isActive])
   @@map("promotions")

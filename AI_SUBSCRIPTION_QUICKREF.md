@@ -24,23 +24,23 @@ curl http://localhost:9000/api/subscription/plans
 
 ## 💰 Pricing at a Glance
 
-| Plan | Price | AI | Requests |
-|------|-------|----|---------| 
-| Starter | $29 | ❌ | - |
-| Professional | $79 | 3 features | 1K/mo |
-| Enterprise | $149 | 6 features | 5K/mo |
-| Ultimate | $299 | Unlimited | ∞ |
+| Plan         | Price   | AI         | Requests |
+| ------------ | ------- | ---------- | -------- | --- | --- |
+| <!-- #       | Starter | $29        | ❌       | -   | --> |
+| Professional | $99     | 3 features | 1K/mo    |
+| Enterprise   | $199    | 6 features | 5K/mo    |
+| Ultimate     | $499    | Unlimited  | ∞        |
 
 ## 🎯 Feature Matrix
 
-| Feature | Pro | Ent | Ult |
-|---------|-----|-----|-----|
-| Recommendations | ✅ | ✅ | ✅ |
-| Chatbot | ✅ | ✅ | ✅ |
-| Analytics | ✅ | ✅ | ✅ |
-| Forecasting | ❌ | ✅ | ✅ |
-| NLP | ❌ | ✅ | ✅ |
-| Pricing | ❌ | ✅ | ✅ |
+| Feature         | Pro | Ent | Ult |
+| --------------- | --- | --- | --- |
+| Recommendations | ✅  | ✅  | ✅  |
+| Chatbot         | ✅  | ✅  | ✅  |
+| Analytics       | ✅  | ✅  | ✅  |
+| Forecasting     | ❌  | ✅  | ✅  |
+| NLP             | ❌  | ✅  | ✅  |
+| Pricing         | ❌  | ✅  | ✅  |
 
 ## 📊 Profitability
 
@@ -55,8 +55,10 @@ Ult  → ~$150/mo   → $149 (50%)
 ## 🔒 Access Control
 
 Every AI endpoint is protected:
+
 ```javascript
-router.get('/endpoint',
+router.get(
+  '/endpoint',
   requireAIFeature(AI_FEATURES.FEATURE_NAME),
   trackAIUsage(AI_FEATURES.FEATURE_NAME),
   controller.method
@@ -65,21 +67,23 @@ router.get('/endpoint',
 
 ## 🚫 Error Codes
 
-| Code | Meaning | Fix |
-|------|---------|-----|
-| 402 | No subscription | Subscribe to plan |
-| 403 | Feature not in plan | Upgrade plan |
-| 429 | Limit reached | Upgrade or wait |
+| Code | Meaning             | Fix               |
+| ---- | ------------------- | ----------------- |
+| 402  | No subscription     | Subscribe to plan |
+| 403  | Feature not in plan | Upgrade plan      |
+| 429  | Limit reached       | Upgrade or wait   |
 
 ## 📈 Usage Tracking
 
 Automatic logging of:
+
 - Brand ID
 - Feature used
 - Timestamp
 - Metadata (endpoint, method, status)
 
 Query usage:
+
 ```javascript
 const { getAIUsageStats } = require('./middleware/aiFeatureAccess');
 const stats = await getAIUsageStats(brandId, 30);
@@ -88,6 +92,7 @@ const stats = await getAIUsageStats(brandId, 30);
 ## 🎓 Common Tasks
 
 ### Subscribe User to Plan
+
 ```javascript
 POST /api/subscription/subscribe
 {
@@ -97,17 +102,19 @@ POST /api/subscription/subscribe
 ```
 
 ### Check AI Feature Access
+
 ```javascript
-GET /api/ai/recommendations
+GET / api / ai / recommendations;
 // Returns 200 if allowed
 // Returns 402/403/429 if not
 ```
 
 ### Monitor Usage
+
 ```sql
-SELECT COUNT(*) 
-FROM ai_usage_logs 
-WHERE brandId = 'uuid' 
+SELECT COUNT(*)
+FROM ai_usage_logs
+WHERE brandId = 'uuid'
 AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 MONTH);
 ```
 
@@ -127,7 +134,7 @@ AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 MONTH);
 ## ✅ Pre-Launch Checklist
 
 - [ ] Database migrated
-- [ ] Plans seeded  
+- [ ] Plans seeded
 - [ ] OpenAI key added
 - [ ] Test subscription created
 - [ ] All AI endpoints tested

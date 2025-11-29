@@ -1,13 +1,23 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-function inBrand(where, brandId) {
-  return { ...where, brandId };
+function buildScope(brandId, branchId) {
+  const where = { brandId };
+  if (branchId) {
+    where.branchId = branchId;
+  }
+  return where;
 }
 
-async function list({ brandId }) {
+async function assertBranchInBrand(branchId, brandId) {
+  if (!branchId) return;
+  const b = await prisma.branch.findFirst({ where: { id: branchId, brandId } });
+  if (!b) throw new Error("Branch not found for this brand");
+}
+
+async function list({ brandId, branchId }) {
   return prisma.menuItem.findMany({
-    where: { brandId },
+    where: buildScope(brandId, branchId),
     orderBy: { createdAt: "desc" },
     include: {
       variants: {
@@ -36,15 +46,23 @@ async function list({ brandId }) {
   });
 }
 
-async function create({ brandId, defaultName, description, sku, isActive }) {
+async function create({ brandId, branchId, defaultName, description, sku, isActive }) {
+  await assertBranchInBrand(branchId, brandId);
   return prisma.menuItem.create({
-    data: { brandId, defaultName, description, sku: sku || null, isActive },
+    data: { 
+      brandId, 
+      branchId: branchId || null, 
+      defaultName, 
+      description, 
+      sku: sku || null, 
+      isActive 
+    },
   });
 }
 
-async function get(id, { brandId }) {
+async function get(id, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id, brandId },
+    where: { id, ...buildScope(brandId, branchId) },
     include: {
       i18n: true,
       variants: {
@@ -81,15 +99,19 @@ async function get(id, { brandId }) {
   return item;
 }
 
-async function update(id, { brandId, ...data }) {
-  const existing = await prisma.menuItem.findFirst({ where: { id, brandId } });
+async function update(id, { brandId, branchId, ...data }) {
+  const existing = await prisma.menuItem.findFirst({ 
+    where: { id, ...buildScope(brandId, branchId) } 
+  });
   if (!existing) throw new Error("Item not found");
   if (data.sku === "") data.sku = null;
   return prisma.menuItem.update({ where: { id }, data });
 }
 
-async function remove(id, { brandId }) {
-  const existing = await prisma.menuItem.findFirst({ where: { id, brandId } });
+async function remove(id, { brandId, branchId }) {
+  const existing = await prisma.menuItem.findFirst({ 
+    where: { id, ...buildScope(brandId, branchId) } 
+  });
   if (!existing) throw new Error("Item not found");
   await prisma.itemCategory.deleteMany({ where: { itemId: id } });
   await prisma.itemModifierGroup.deleteMany({ where: { itemId: id } });
@@ -108,13 +130,13 @@ async function remove(id, { brandId }) {
   await prisma.menuItem.delete({ where: { id } });
 }
 
-async function attachCategories(itemId, { brandId, categoryIds }) {
+async function attachCategories(itemId, { brandId, branchId, categoryIds }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   const cats = await prisma.menuCategory.findMany({
-    where: { id: { in: categoryIds }, brandId },
+    where: { id: { in: categoryIds }, ...buildScope(brandId, branchId) },
   });
   if (cats.length !== categoryIds.length)
     throw new Error("Some categories not found in brand");
@@ -130,9 +152,9 @@ async function attachCategories(itemId, { brandId, categoryIds }) {
   });
 }
 
-async function listCategories(itemId, { brandId }) {
+async function listCategories(itemId, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   return prisma.itemCategory.findMany({
@@ -141,9 +163,9 @@ async function listCategories(itemId, { brandId }) {
   });
 }
 
-async function detachCategory(itemId, categoryId, { brandId }) {
+async function detachCategory(itemId, categoryId, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   await prisma.itemCategory.delete({
@@ -152,9 +174,9 @@ async function detachCategory(itemId, categoryId, { brandId }) {
 }
 
 // i18n
-async function upsertI18n(itemId, { brandId, locale, name, description }) {
+async function upsertI18n(itemId, { brandId, branchId, locale, name, description }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   return prisma.menuItemI18n.upsert({
@@ -164,17 +186,17 @@ async function upsertI18n(itemId, { brandId, locale, name, description }) {
   });
 }
 
-async function getI18n(itemId, { brandId }) {
+async function getI18n(itemId, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   return prisma.menuItemI18n.findMany({ where: { itemId } });
 }
 
-async function deleteI18n(itemId, locale, { brandId }) {
+async function deleteI18n(itemId, locale, { brandId, branchId }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   await prisma.menuItemI18n.delete({
@@ -183,13 +205,13 @@ async function deleteI18n(itemId, locale, { brandId }) {
 }
 
 // link modifier groups to item
-async function linkModifierGroups(itemId, { brandId, groupIds, required }) {
+async function linkModifierGroups(itemId, { brandId, branchId, groupIds, required }) {
   const item = await prisma.menuItem.findFirst({
-    where: { id: itemId, brandId },
+    where: { id: itemId, ...buildScope(brandId, branchId) },
   });
   if (!item) throw new Error("Item not found");
   const groups = await prisma.modifierGroup.findMany({
-    where: { id: { in: groupIds }, brandId },
+    where: { id: { in: groupIds }, ...buildScope(brandId, branchId) },
   });
   if (groups.length !== groupIds.length)
     throw new Error("Some modifier groups not found in brand");

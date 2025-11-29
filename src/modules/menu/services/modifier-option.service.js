@@ -1,9 +1,17 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-async function list(groupId, { brandId }) {
+function buildScope(brandId, branchId) {
+  const where = { brandId };
+  if (branchId) {
+    where.branchId = branchId;
+  }
+  return where;
+}
+
+async function list(groupId, { brandId, branchId }) {
   const group = await prisma.modifierGroup.findFirst({
-    where: { id: groupId, brandId },
+    where: { id: groupId, ...buildScope(brandId, branchId) },
   });
   if (!group) throw new Error("Modifier group not found");
   return prisma.modifierOption.findMany({
@@ -12,9 +20,9 @@ async function list(groupId, { brandId }) {
   });
 }
 
-async function create(groupId, { brandId, name, price, isActive, sortOrder }) {
+async function create(groupId, { brandId, branchId, name, price, isActive, sortOrder }) {
   const group = await prisma.modifierGroup.findFirst({
-    where: { id: groupId, brandId },
+    where: { id: groupId, ...buildScope(brandId, branchId) },
   });
   if (!group) throw new Error("Modifier group not found");
   return prisma.modifierOption.create({
@@ -22,17 +30,17 @@ async function create(groupId, { brandId, name, price, isActive, sortOrder }) {
   });
 }
 
-async function update(id, { brandId, ...data }) {
+async function update(id, { brandId, branchId, ...data }) {
   const option = await prisma.modifierOption.findFirst({
-    where: { id, group: { brandId } },
+    where: { id, group: buildScope(brandId, branchId) },
   });
   if (!option) throw new Error("Modifier option not found");
   return prisma.modifierOption.update({ where: { id }, data });
 }
 
-async function remove(id, { brandId }) {
+async function remove(id, { brandId, branchId }) {
   const option = await prisma.modifierOption.findFirst({
-    where: { id, group: { brandId } },
+    where: { id, group: buildScope(brandId, branchId) },
   });
   if (!option) throw new Error("Modifier option not found");
   await prisma.modifierOption.delete({ where: { id } });

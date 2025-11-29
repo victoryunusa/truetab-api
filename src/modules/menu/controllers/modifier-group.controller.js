@@ -5,7 +5,10 @@ const {
 const svc = require("../services/modifier-group.service");
 
 async function list(req, res) {
-  const data = await svc.list({ brandId: req.tenant.brandId });
+  const data = await svc.list({ 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId 
+  });
   res.json({ data });
 }
 async function create(req, res) {
@@ -14,7 +17,11 @@ async function create(req, res) {
   });
   if (error)
     return res.status(400).json({ error: error.details.map((d) => d.message) });
-  const data = await svc.create({ brandId: req.tenant.brandId, ...value });
+  const data = await svc.create({ 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
+    ...value 
+  });
   res.status(201).json({ data });
 }
 async function update(req, res) {
@@ -25,12 +32,16 @@ async function update(req, res) {
     return res.status(400).json({ error: error.details.map((d) => d.message) });
   const data = await svc.update(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
     ...value,
   });
   res.json({ data });
 }
 async function remove(req, res) {
-  await svc.remove(req.params.id, { brandId: req.tenant.brandId });
+  await svc.remove(req.params.id, { 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId 
+  });
   res.status(204).send();
 }
 

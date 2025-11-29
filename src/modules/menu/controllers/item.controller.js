@@ -7,7 +7,10 @@ const {
 const svc = require("../services/item.service");
 
 async function list(req, res) {
-  const data = await svc.list({ brandId: req.tenant.brandId });
+  const data = await svc.list({ 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId 
+  });
   res.json({ data });
 }
 
@@ -17,12 +20,19 @@ async function create(req, res) {
   });
   if (error)
     return res.status(400).json({ error: error.details.map((d) => d.message) });
-  const data = await svc.create({ brandId: req.tenant.brandId, ...value });
+  const data = await svc.create({ 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
+    ...value 
+  });
   res.status(201).json({ data });
 }
 
 async function get(req, res) {
-  const data = await svc.get(req.params.id, { brandId: req.tenant.brandId });
+  const data = await svc.get(req.params.id, { 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId 
+  });
   res.json({ data });
 }
 
@@ -34,13 +44,17 @@ async function update(req, res) {
     return res.status(400).json({ error: error.details.map((d) => d.message) });
   const data = await svc.update(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
     ...value,
   });
   res.json({ data });
 }
 
 async function remove(req, res) {
-  await svc.remove(req.params.id, { brandId: req.tenant.brandId });
+  await svc.remove(req.params.id, { 
+    brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId 
+  });
   res.status(204).send();
 }
 
@@ -53,6 +67,7 @@ async function attachCategories(req, res) {
     return res.status(400).json({ error: error.details.map((d) => d.message) });
   const data = await svc.attachCategories(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
     categoryIds: value.categoryIds,
   });
   res.json({ data });
@@ -61,6 +76,7 @@ async function attachCategories(req, res) {
 async function listCategories(req, res) {
   const data = await svc.listCategories(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
   });
   res.json({ data });
 }
@@ -68,6 +84,7 @@ async function listCategories(req, res) {
 async function detachCategory(req, res) {
   await svc.detachCategory(req.params.id, req.params.categoryId, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
   });
   res.status(204).send();
 }
@@ -79,6 +96,7 @@ async function upsertI18n(req, res) {
     return res.status(400).json({ error: error.details.map((d) => d.message) });
   const data = await svc.upsertI18n(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
     ...value,
   });
   res.json({ data });
@@ -87,6 +105,7 @@ async function upsertI18n(req, res) {
 async function getI18n(req, res) {
   const data = await svc.getI18n(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
   });
   res.json({ data });
 }
@@ -94,6 +113,7 @@ async function getI18n(req, res) {
 async function deleteI18n(req, res) {
   await svc.deleteI18n(req.params.id, req.params.locale, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
   });
   res.status(204).send();
 }
@@ -108,6 +128,7 @@ async function linkModifierGroups(req, res) {
     return res.status(400).json({ error: error.details.map((d) => d.message) });
   const data = await svc.linkModifierGroups(req.params.id, {
     brandId: req.tenant.brandId,
+    branchId: req.tenant.branchId,
     ...value,
   });
   res.json({ data });
